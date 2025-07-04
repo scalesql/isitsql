@@ -4,9 +4,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/failure"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/failure"
+	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/sirupsen/logrus"
 )
 

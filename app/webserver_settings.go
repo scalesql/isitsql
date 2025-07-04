@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/c2"
-	"github.com/scalesql/isitsql/internal/gui"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"github.com/scalesql/isitsql/internal/c2"
+	"github.com/scalesql/isitsql/internal/gui"
+	"github.com/scalesql/isitsql/internal/settings"
 )
 
 func settingsPage(w http.ResponseWriter, r *http.Request) {

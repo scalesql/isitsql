@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/ad"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/ad"
+	"github.com/scalesql/isitsql/internal/settings"
 )
 
 func loginPage(w http.ResponseWriter, r *http.Request) {

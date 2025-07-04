@@ -3,7 +3,7 @@ package gui
 import (
 	"errors"
 
-	"github.com/scalesql/isitsql/settings"
+	"github.com/scalesql/isitsql/internal/settings"
 )
 
 var MessageClassDanger = "alert-danger"

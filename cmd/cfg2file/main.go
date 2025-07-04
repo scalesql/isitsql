@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/scalesql/isitsql/internal/backup"
-	"github.com/scalesql/isitsql/internal/c2"
-	"github.com/scalesql/isitsql/internal/fileio"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/backup"
+	"github.com/scalesql/isitsql/internal/c2"
+	"github.com/scalesql/isitsql/internal/fileio"
+	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/zclconf/go-cty/cty"
 )
 

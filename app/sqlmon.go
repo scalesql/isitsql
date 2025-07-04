@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/radovskyb/watcher"
+	uuid "github.com/satori/go.uuid"
 	"github.com/scalesql/isitsql/internal/bucket"
 	"github.com/scalesql/isitsql/internal/c2"
 	"github.com/scalesql/isitsql/internal/cxnstring"
@@ -16,11 +19,8 @@ import (
 	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/scalesql/isitsql/internal/fileio"
 	"github.com/scalesql/isitsql/internal/hadr"
+	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/scalesql/isitsql/internal/waitmap"
-	"github.com/scalesql/isitsql/settings"
-	"github.com/pkg/errors"
-	"github.com/radovskyb/watcher"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 )

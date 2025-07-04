@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/dwaits"
-	"github.com/scalesql/isitsql/internal/failure"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/billgraziano/mssqlodbc"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/dwaits"
+	"github.com/scalesql/isitsql/internal/failure"
+	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 

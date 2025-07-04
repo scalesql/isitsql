@@ -10,12 +10,12 @@ import (
 	"strconv"
 
 	"github.com/arl/statsviz"
-	"github.com/scalesql/isitsql/internal/failure"
-	"github.com/scalesql/isitsql/settings"
-	"github.com/scalesql/isitsql/static"
 	"github.com/go-pkgz/routegroup"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/scalesql/isitsql/internal/failure"
+	"github.com/scalesql/isitsql/internal/settings"
+	"github.com/scalesql/isitsql/static"
 )
 
 func launchWebServer() {

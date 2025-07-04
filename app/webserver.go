@@ -19,18 +19,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
+	"github.com/leekchan/gtf"
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/build"
 	"github.com/scalesql/isitsql/internal/diskio"
 	"github.com/scalesql/isitsql/internal/gui"
 	"github.com/scalesql/isitsql/internal/hadr"
 	"github.com/scalesql/isitsql/internal/logring"
 	"github.com/scalesql/isitsql/internal/mssql/session"
+	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/scalesql/isitsql/internal/waitmap"
-	"github.com/scalesql/isitsql/settings"
 	"github.com/scalesql/isitsql/static"
-	"github.com/dustin/go-humanize"
-	"github.com/leekchan/gtf"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 

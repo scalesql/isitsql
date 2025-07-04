@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/scalesql/isitsql/internal/dwaits"
-	//"github.com/scalesql/isitsql/settings"
+	//"github.com/scalesql/isitsql/internal/settings"
 )
 
 type appConfig struct {
