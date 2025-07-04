@@ -1,0 +1,86 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+<h1>SQL Server Usage</h1>
+<p>Filter: <input type="text" id="filter" name="filter">   <a  href="/usage/csv">Download as CSV</a><p>
+
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Instance</th>
+            <th>Domain</th>
+            <th class="sorter-metric" data-sortInitialOrder="desc">Version</th>
+            <th>Edition</th>
+            <th style="text-align:center;">Cores</th>
+            <th style="text-align:center;" title="Average cores used for SQL Server based on CPU %">Avg Cores-SQL</th>
+            <th style="text-align:center;" title="Average cores used for non-SQL Server based on CPU %">Avg Cores-Other</th>
+            <th style="text-align:center;" class="sorter-metric" data-metric-name-abbr="b|B">Memory</th>
+            <th style="text-align:center;">Installed</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range .Usage}}
+        <tr class="{{ .GetTableCssClass }}" role="alert">
+            <td><a href="{{ .URL }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .ServerName }}</a></td>
+            <td>{{ .Domain }}</td>
+            <td>{{ .VersionString }}</td> 
+            <td>{{ .ProductEdition }}</td>
+            <td style="text-align:center;" >{{ .CpuCount }}</td>
+            <td style="text-align:center;" title='Peak Cores Used: SQL: {{ printf "%.1f" .PeakCoresSQL }}'>{{ printf "%.1f" .AvgCoresSQL }}</td>
+            <td style="text-align:center;" title='Peak Cores Used: Other: {{ printf "%.1f" .PeakCoresOther }}'>{{ printf "%.1f" .AvgCoresOther }}</td>
+            <td style="text-align:center;" >{{ .PhysicalMemoryKB | kbtostring }}</td>
+            <td style="text-align:center;" title="{{ .Installed }}">{{ if .Installed.IsZero }}{{else}}{{ .Installed.Format "2006-01-02" }}{{end}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Usage }}
+
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#serverlist tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}
+

@@ -1,0 +1,72 @@
+{{ define "head" }}
+    <!--<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> -->
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+<ul class="nav nav-tabs menu-line-2">
+    <li class="nav-item"><a class="nav-link" href="/settings/servers">Servers</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings/credentials">Credentials</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings">Settings</a></li>
+</ul>
+{{ end }}
+
+
+
+{{ define "content" }}
+
+
+<div class="row">
+    <div class="col-md-8">
+
+        <h1>Advanced Settings</h1>
+
+        <form class="form-horizontal" method="POST" action="/settings/advanced">
+            <div class="form-group">
+                <label for="reportUsage" class="col-sm-5 control-label">Report Application Usage</label>
+
+                <div class="col-sm-3">
+                    <div class="checkbox">
+                        <label>
+                        <input type="checkbox" id="reportUsage" placeholder="" name="reportUsage"  aria-describedby="helpBlock"> 
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-sm-7 col-sm-offset-5">
+                    <span id="helpBlock" class="help-block">Report application usage once per day.  <a href="/appusage">See a sample report</a>.</span>    
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="reportErrors" class="col-sm-5 control-label">Report Application Errors</label>
+
+                <div class="col-sm-3">
+                    <div class="checkbox">
+                        <label>
+                        <input type="checkbox" id="reportErrors" placeholder="" name="reportErrors"  aria-describedby="reportErrors-help"> 
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-sm-7 col-sm-offset-5">
+                    <span id="reportErrors-help" class="help-block">Upload any application errors.</span>    
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-5 col-sm-7">
+                <button type="submit" class="btn btn-default" {{if ne .EnableSave true}}disabled{{end}}>Save</button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+
+
+{{ end }}

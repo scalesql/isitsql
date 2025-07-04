@@ -1,0 +1,59 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    $(function(){
+        $("#tableList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} </h1>
+    </div>
+</div>
+
+{{ if .Problems }}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <ul>
+            {{range $k, $v := .Problems}}
+                <li>{{ $v }}</li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+{{ end }}  
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Job: <a href="{{ .Job.HistoryURL }}">{{ .Job.Name }}</a></h2>
+        {{ range $k, $v := .JobStepLogs }}
+        <h3>Step #{{ $v.StepID }}: {{ $v.StepName }}</h3>
+        <p><pre>{{ $v.Log}}</pre></p>
+        {{ end }}
+    </div>
+</div>
+
+
+{{ end }}

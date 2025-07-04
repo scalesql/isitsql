@@ -1,0 +1,143 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+{{ end }}
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#databaseList").tablesorter({
+            widgets: ["saveSort"]
+        });
+    });
+
+</script>
+
+<script>
+
+    $(function() {
+            $.fn.clicktoggle = function(a, b) {
+            return this.each(function() {
+                var clicked = false;
+                $(this).click(function() {
+                    if (clicked) {
+                        clicked = false;
+                        return b.apply(this, arguments);
+                    }
+                    clicked = true;
+                    return a.apply(this, arguments);
+                });
+            });
+        };
+
+        $(".more").clicktoggle(function() {
+            $(this).text("(Shorten)").siblings(".complete").show();
+            }, function() {
+            $(this).text("(Show Full Query)").siblings(".complete").hide();
+        });
+    });
+</script>
+
+<style>
+
+    .complete{
+    display:none;
+}
+
+.more{
+    background:lightblue;
+    color:navy;
+    font-size:13px;
+    padding:3px;
+    cursor:pointer;
+}
+    
+    </style>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }}</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-12">
+
+        <table class="table tablesorter" id="databaseList">
+        <thead>
+            <tr>
+                <th>Database</th>
+                <th>Object</th>
+                
+                <th style="text-align: center;">Plan Created</th>
+                <th style="text-align: center;" data-sortInitialOrder="desc">Last Exec</th>
+                <th style="text-align: center;" data-sortInitialOrder="desc">Count</th>
+                <th style="text-align: center;" data-sortInitialOrder="desc">Avg CPU (ms)</th>
+                <th style="text-align: center;" data-sortInitialOrder="desc">Avg Logical Reads</th>
+                <th style="text-align: center;">Statement</th>
+                <!--<th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Data <span style="color:darkgray;">(Log)</span>
+                </th>
+                <th style="text-align: center;">Compatibility</th>
+                <th style="text-align: center;">Collation</th>-->
+            </tr>
+        </thead>
+
+        <tbody>
+            {{range .QueryStats}}
+            <tr class="" role="alert">
+                <td>{{ .Database }}</td>
+                <!--<td style="">{{ .Object }}</td>-->
+                <td style="">
+                    {{ if .ObjectShort }}
+                    <span class="teaser">{{ .ObjectShort }}</span>
+                    <span class="complete">{{ .Object }}</span>
+                    <span class="more">more...</span>
+                    {{ else }}
+                        {{ .Object }}
+                    {{ end }}
+                </td>
+                
+                <td style="">{{ .CreationTime }}</td>
+                <td style="">{{ .LastExecutionTime }}</td>
+                <td style="">{{ .ExecutionCount }}</td>
+                <td style="">{{ .AvgWorkerTime }}</td>
+                <td style="">{{ .AvgLogicalReads }}</td>
+                <td style="">
+                    {{ if .StatementShort }}
+                    <span class="more">(Show Full Query)</span>
+                    <span class="complete">{{ .Statement }}</span>
+                    <span class="teaser">{{ .StatementShort }}</span>
+                    
+                    {{ else }}
+                        {{ .Statement }}
+                    {{ end }}
+                </td>
+            </tr>
+            {{ end }}
+        </tbody>
+        </table>
+
+        </div>
+        
+    </div>
+
+{{ end }}
+

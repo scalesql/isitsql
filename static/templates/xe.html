@@ -1,0 +1,107 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "content" }}
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} <span class="glyphicon glyphicon-flash" aria-hidden="true" title="This section is polled in real-time when the page is refreshed"></span></h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        
+        <p>Filter: <input type="text" id="filter" name="filter"> </p> 
+
+        <table class="table tablesorter" id="eventTable">
+        <thead>
+            <tr>
+                <!--<th>Name</th>-->
+                <th style="text-align: center;" data-sorter="shortDate" data-date-format="yymmdd">Time Stamp</th>
+                <th style="text-align: center;">Event</th>
+                <th style="text-align: left;">Login</th>
+                <!--<th style="text-align: left;">Error</th>-->
+                <th style="text-align: left;">Message</th>
+                <th style="text-align: left;">Formatted SQL Text</th>
+                <!--<th>Login</th>
+                <th>Wait</th>
+                <th>SQL Statement</th>-->
+            </tr>
+        </thead>
+        <tbody>
+                
+        {{ range .Events }}
+            {{ $sqltext := .SQLText }}
+            {{ $maxError := or .ErrorNumber .Severity .State }}
+            <tr>
+            <td style="text-align: center; white-space: nowrap;" title="{{ .TimeStamp | utctolocal }}" data-text="{{ .TimeStamp | timetoYMDT }}">{{ .TimeStamp | xeSessionTime }}</td>
+            <td style="text-align: center;">{{ .EventName }} {{ if $maxError }}{{.ErrorNumber}}:{{.Severity}}:{{.State}}{{end }}</td>
+            <td style="text-align: left;" title="Host: {{ .HostName }}  App: {{ .AppName }}">{{ .UserName }}</td>
+            <!--<td style="text-align: center;" title="Severity: {{ .Severity }} State: {{ .State }}"> {{ .ErrorNumber }} </td>-->
+            <td style="text-align: left;" title="{{ .Message }}"> {{ .Message | leftstring200 }} </td>
+            <td style="text-align: left; word-wrap: break-word; " title="{{ .SQLText }}"> {{ .SQLText | leftstring200 }} </td>
+
+            </tr>
+        {{ end}}
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#eventTable tbody tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>  
+
+{{ if not .Events }}
+
+    <p>No events found or the session doesn't exist.</p>
+    <p>
+        &nbsp;
+    </p>
+    <pre><code>
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
+    ALTER EVENT SESSION ErrorSession ON SERVER STATE = STOP
+
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
+    DROP EVENT SESSION ErrorSession ON SERVER 
+
+CREATE EVENT SESSION ErrorSession ON SERVER 
+    ADD EVENT sqlserver.error_reported            
+    -- collect failed SQL statement, the SQL stack that led to the error, 
+    -- the database id in which the error happened and the username that ran the statement 
+    
+    (
+        ACTION (sqlserver.sql_text, sqlserver.tsql_stack, sqlserver.database_id, 
+            sqlserver.username, sqlserver.client_app_name, sqlserver.client_hostname, package0.collect_system_time)
+        WHERE severity >= 14 and error_number <> 2557 and error_number <> 17830
+    )  
+    ADD TARGET package0.ring_buffer    
+        (SET max_memory = 1024)
+WITH (max_dispatch_latency = 1 seconds, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, STARTUP_STATE = ON)
+
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
+    ALTER EVENT SESSION ErrorSession ON SERVER STATE = START
+    </code></pre>
+{{ end }}
+    
+
+{{ end }}

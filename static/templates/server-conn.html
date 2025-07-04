@@ -1,0 +1,98 @@
+{{ define "head" }}
+<script type='text/javascript' src='/static/js/jquery-3.7.1.min.js'></script>
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+{{ end }}
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+{{ if .OneServer }}
+    <div class="row">
+        <div class="col-md-6">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} <a href="/settings/servers/edit/{{ .OneServer.MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog" style="font-size: 50%;"></span></a></h1>
+        </div>
+        
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <p>
+                <strong>Cores: </strong>{{ .OneServer.CpuCount }} core{{ .OneServer.CpuCount | pluralize "s" }}; 
+                <strong>Memory:</strong> 
+                    Used: {{ .OneServer.SqlServerMemoryKB | kbtostring }} /
+                    {{ if .OneServer.MaxMemorySet }} Max:  {{ .OneServer.MaxMemoryKB | kbtostring }} / {{ end }}
+                    Physical: {{ .OneServer.PhysicalMemoryKB | kbtostring }}
+                <strong>Version:</strong> {{ .OneServer.VersionString }} {{ .OneServer.ProductLevel }} ({{ .OneServer.ProductVersion }})
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Connection Pool</h2>
+            <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .Pool}}
+                <tr>
+                    <td style="white-space: nowrap; ">{{ $key }}</td>
+                    <td>{{ $value }}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+        </div>
+
+        <div class="col-md-6">
+            <h2>Connection</h2>
+            <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .Connection}}
+                <tr>
+                    <td style="white-space: nowrap; ">{{ $key }}</td>
+                    <td>{{ $value }}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+{{ else  }}
+
+<div class="row">
+        <div class="col-md-6">
+            <h1>Server Not Found</h1>
+        </div>
+        
+    </div>
+
+{{ end }}
+    
+
+    
+
+{{ end }}

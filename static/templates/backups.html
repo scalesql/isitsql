@@ -1,0 +1,196 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 120000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#databaseList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+        $("#serverList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+</script>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            {{ if .InstanceAlerts }}
+            <div class="alert alert-warning" role="alert">
+            <ul>
+                {{ range .InstanceAlerts }}
+                    <li>{{ . }}</li>
+                {{ end }}
+            </ul>
+            </div>
+            {{ end }}     
+        </div>
+    </div>
+
+    <div class="row">
+            <div class="col-md-12">
+                <h1>Missing Server Backups</h1>
+                <p><em>Note: Backups poll every five minutes</em></p>
+                <table class="table tablesorter" id="serverList">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Instance</th>
+                            <th style="text-align: center;">Databases</th>
+                            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Data</th>
+                            <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Log</th>
+                            <th style="text-align: center;">Oldest Full</th>
+                            <th style="text-align: center;">Oldest Log</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    {{ range $k2, $v2 := .InstanceSummary }}
+
+                    {{ $now := $v2.CurrentTime}}
+
+                        <tr>
+                            <td><a href="/tag/domain-{{ $v2.Domain }}">{{ $v2.Domain }}</a></td>
+                            <td><a href="/server/{{ .ServerMapKey }}/databases">{{ $v2.ServerName  }}</a></td>
+                            <td style="text-align: center;">{{ $v2.Count | commaint }}</td>
+                            <td style="text-align: center;">
+                                {{ if .DataSizeKB }} {{ .DataSizeKB | kbtostring}} {{ end }}
+                            </td>
+
+                            <td style="text-align: center; color:darkgray;">
+                                {{ if .LogSizeKB }}{{ .LogSizeKB | kbtostring}}{{ end }}
+                            </td>
+
+                            <td style="text-align: center;" data-text="{{ $v2.OldestBackup | timetoYMDT }}">
+                                    {{ if hasTimeValue $v2.OldestBackup }}{{ durationDifference $v2.OldestBackup $now }}{{end}}
+                            </td>
+
+                            <td style="text-align: center;" data-text="{{ $v2.OldestLogBackup | timetoYMDT}}">
+                                    {{ if hasTimeValue $v2.OldestLogBackup }}{{ durationDifference $v2.OldestLogBackup $now }}{{end}}
+                            </td>
+                            <td><a href="/settings/servers/edit/{{ .ServerMapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
+
+                                    </tr>
+                    {{ end }}
+                </table>
+            </div>
+    </div>
+
+
+    <div class="row">
+        
+        <div class="col-md-12">
+        <h1>Missing Database Backups</h1>
+        <table class="table tablesorter" id="databaseList">
+        <thead>
+            <tr>
+                <th>Domain</th>
+                <th>Instance</th>
+                <th>Database</th>
+                <th style="text-align: center;">Created</th>
+                <th style="text-align: center;">Recovery</th>
+                <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Data
+                </th>
+                <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Log
+                </th>
+                
+                <th style="text-align: center;">Full Backup</th>
+                <th style="text-align: center;">Log Backup</th>
+                <th></th>
+            </tr>
+        </thead>
+            {{ range $k, $v := .DatabaseAlerts }}
+            <tr>
+                <td><a href="/tag/domain-{{ $v.Domain }}">{{ $v.Domain }}</a></td>
+                <td><a href="/server/{{ .ServerMapKey }}/databases">{{ $v.ServerName  }}</a></td>
+                <td>{{ $v.DatabaseName }}</td>
+                <td style="text-align: center;" data-text="{{ $v.CreateDate | timetoYMDT }}">{{ $v.CreateDate | timetoYMD }}
+                <td style="text-align: center;">{{ $v.RecoveryModelDesc }}</td>
+
+                <td style="text-align: center;">
+                    {{ if .DataSizeKB }} {{ .DataSizeKB | kbtostring}} {{ end }}
+                </td>
+
+                <td style="text-align: center; color:darkgray;">
+                    {{ if .LogSizeKB }}{{ .LogSizeKB | kbtostring}}{{ end }}
+                </td>
+                
+                <td style="text-align: center;" data-text="{{ $v.LastBackup | timetoYMDT }}" 
+                    {{ if hasTimeValue .LastBackup }}title="{{ $v.LastBackup | timetoYMDT }} (server time zone) to {{ $v.LastBackupDevice }} on {{ .LastBackupInstance }}"{{end}}>
+                        {{ if hasTimeValue $v.LastBackup }}{{ durationDifference $v.LastBackup $v.CurrentTime }}{{end}}
+                </td>
+
+                <td style="text-align: center;" data-text="{{ $v.LastLogBackup | timetoYMDT}}" 
+                    {{ if hasTimeValue $v.LastLogBackup }}title="{{ $v.LastLogBackup | timetoYMDT }} (server time zone) to {{ $v.LastLogBackupDevice }} on {{ .LastLogBackupInstance }}"{{end}}>
+                        {{ if hasTimeValue $v.LastLogBackup }}{{ durationDifference $v.LastLogBackup $v.CurrentTime }}{{end}}
+                </td>
+                <td><a href="/settings/servers/edit/{{ .ServerMapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
+
+            </tr>
+            {{ end }}
+        <tbody>
+
+        </tbody>
+        </table>
+
+        {{ if not .DatabaseAlerts }}
+            <p><em>Note: Either the backups haven't polled yet or there aren't any database alerts.</em></p>
+        {{ end }}
+
+        {{ if .IgnoredBackups }}
+            <h3>Current Ignored Backup File</h3>
+            <p><em>Note: This is the parsed version of the file excluding comments.</em></p>
+            <pre>{{- range $i, $line := .IgnoredBackups }}
+{{ $line }}{{end}}</pre>
+        {{ end }}
+
+        <p>&nbsp;</p>
+        <h3>Customizing this page</h3>
+        <p><strong>Note: Backups only poll every five minutes</strong></p>
+        <p>Expected backups can be overridden by creating a file in the <code>config</code> directory named <code>ignoredBackups.csv</code> (or <code>ignoredBackups.txt</code>).  
+            This will exclude servers or databases from appearing on this list.  Currently it has default thresholds of 
+            36 hours for full backups or differentials and 90 minutes for log backups.</p>
+
+        <p>The file is comma separated and can have either two or three fields.  If you need to exclude multiple databases on an instance, use one line per database.</p>
+        <ol>
+            <li>Domain</li>
+            <li>Server Name - The value that @@SERVERNAME returns</li>
+            <li>Excluded Database Name - Optional.  If this value isn't specified all databases on this instance are excluded.</li>
+        </ol>
+        <p>The <code>#</code> symbol is a comment.
+
+        <p>Sample File:</p>
+        <pre>
+# Domain, Server [, Database]
+PROD, TXN1\Testing
+TEST, MKTG, Working
+TEST, MKTG, AnotherDB
+        </pre>
+
+        </div>
+        
+    </div>
+
+    
+
+{{ end }}

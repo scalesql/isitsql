@@ -1,0 +1,96 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+<h1>SQL Server Memory</h1>
+<p>Filter: <input type="text" id="filter" name="filter"><p>
+
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Instance</th>
+            {{/* <th>Domain</th>
+            <th class="sorter-metric" data-sortInitialOrder="desc">Version</th>
+            <th style="text-align:center;">Level</th>
+            <th style="text-align:center;">Update</th>
+            <th style="text-align:center;">Build</th>
+            <th>Edition</th>
+            <th>OS</th>
+            <th style="text-align:center;">Installed</th> */}}
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" title="computer or container memory">OS: Total</th>
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" title="sp_configure: max server memory (MB)">MSSQL: Max</th>
+
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B">MSSQL: Used</th>
+            <th style="text-align: center;" title="available_physical_memory_kb from sys.dm_os_sys_memory" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="asc">OS: Available</th>
+            <th style="text-align: right;" class="sorter-metric" title="Page Life Expectancy">PLE</th> 
+            <th style="text-align: center;" title="system_memory_state_desc from sys.dm_os_sys_memory">State</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range .Servers}}
+        {{ $freepct := int64topct .AvailableMemoryKB .PhysicalMemoryKB }}
+        <tr class="{{ .GetTableCssClass }}" role="alert">
+            <td><a href="{{ .URL }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .ServerName }}</a></td>
+            <td style="text-align: center;" >{{ .PhysicalMemoryKB | kbtostring }}</td>
+            <td style="text-align: center;" data-text="{{.MaxMemoryKB}}" >{{if .MaxMemorySet }}{{ .MaxMemoryKB | kbtostring }}{{end}}</td>
+            <td style="text-align: center;" >{{ .KBToString .SqlServerMemoryKB }}</td>
+            <td style="text-align: center;" data-text="{{ $freepct }}" >{{ printf "%.1f" $freepct}}% <span style="color:darkgray;">({{ .AvailableMemoryKB | kbtostring }})</span></td>
+            <td style="text-align: right;">{{ .PLE | comma}}</td>
+            <td style="text-align: center;" > {{ .MemoryStateDesc }}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Servers }}
+    <p>No servers?</p>
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+<div>
+
+</div>
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#serverlist tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}
+

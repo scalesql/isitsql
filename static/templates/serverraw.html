@@ -1,0 +1,32 @@
+{{ define "head" }}
+
+
+{{ end }}
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }} - Raw Data Structure</h1>
+        </div>
+        
+    </div>
+
+
+     <div class="row">
+        <div class="col-md-12">
+            <p>JSON Size: {{ .JSONLength | bytesint }} ( {{ .CompressedLength | bytesint }} GZIP )</p>
+            <p>Compact JSON Size: {{ .JSONLength2 | bytesint }} ( {{ .CompressedLength2 | bytesint }} GZIP )</p>
+            <pre>{{ .RawJSON }}</pre>
+        </div>
+    </div>
+
+{{ end }}

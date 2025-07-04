@@ -1,0 +1,39 @@
+{{ define "head" }}
+
+{{ end }}
+
+
+{{ define "content" }}
+
+<p>Filter: <input type="text" id="filter" name="filter"> </p> 
+  
+  <table class="table table-striped" id="logTable">
+      <thead>
+          <tr>
+              <th style="text-align: center;">Log Time</th>
+              <th>Log Message</th>
+          </tr>
+      </thead>
+      <tbody>
+  {{range .LogEvents}}
+    <tr>
+        <td style="white-space: nowrap; text-align: center;" title="{{ .LogTime }}">{{ .LogTime | xeSessionTime }}</td>
+        <td>{{ .Message }}</td>
+    </tr>
+  {{end}}
+      </tbody>
+  </table>
+  
+  <script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#logTable tbody tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>  
+  
+
+{{ end }}

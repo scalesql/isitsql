@@ -1,0 +1,63 @@
+{{ define "head" }}
+
+    <script type='text/javascript' src='/static/js/jquery-3.7.1.min.js'></script>
+    <script type='text/javascript' src="/static/js/chartjs/chart.js"></script>
+    <script type='text/javascript' src="/static/js/chartjs/date-fns.js"></script>
+    <script type='text/javascript' src="/static/js/chartjs/chartjs-adapter-date-fns.js"></script>
+    <script type='text/javascript' src="/static/js/lodash.js"></script>
+    <script type='text/javascript' src="/static/js/isitsql-charting-1.0.js"></script>
+
+{{ end }}
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 15000);
+    }
+</script>
+
+<script  type="text/javascript" >
+  $(document).ready(
+      function() {
+
+        var unixNow = {{ .UnixNow }}
+
+        {{ range $i, $s := .S2 }}
+            // GenerateCpuChart("{{ $s.MapKey }}", "a{{ $i }}cpu", unixNow) 
+            NewCPUChart("{{ $s.MapKey }}", "a{{ $i }}cpuCanvas")
+            //GenerateDiskChart("{{ $s.MapKey }}", "a{{ $i }}disk", unixNow)
+            NewDiskChart("{{ $s.MapKey }}", "a{{ $i }}diskCanvas")
+            // GenerateW2Chart("{{ $s.MapKey }}", "a{{ $i }}wait", unixNow)
+            NewWaitsChart("waits2", "{{ $s.MapKey }}", "a{{ $i }}waitCanvas", unixNow)
+        {{ end }}
+
+      }
+  );
+</script>
+
+    <div class="row">
+        {{ range $i, $s := .S2 }}
+            <div class="col-md-4">
+                <h2 style="text-align: center"><a href="/server/{{ $s.MapKey }}" title="{{ $s.ServerName }}">{{ $s.DisplayName }}</a>{{ if  ne .DisplayName .ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .ServerName }})</span>{{ end }}</h2>
+                
+                <div id="a{{ $i }}cpu" style="height: 250px">
+                    <p class="chart-title">CPU Usage & Activity</p>
+                    <canvas id="a{{ $i }}cpuCanvas"></canvas>
+                </div>
+
+                <div id="a{{ $i }}disk" style="height: 250px">
+                    <p class="chart-title">Disk Usage</p>
+                    <canvas id="a{{ $i }}diskCanvas"></canvas>
+                </div>
+
+                <div id="a{{ $i }}wait" style="height: 250px">
+                    <p class="chart-title">Dynamic Waits</p>
+                    <canvas id="a{{ $i }}waitCanvas"></canvas>
+                </div>
+            </div>
+        {{ end }}
+    </div>
+
+{{ end }}

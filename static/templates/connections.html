@@ -1,0 +1,96 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 30000);
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+{{ if gt (len .Servers) 6}}<p>Filter: <input type="text" id="filter" name="filter"></p>{{ end }}
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Server</th>
+            <th>Key</th>
+            <th>FQDN</th>
+            <th>Domain</th>
+            <th>Server Name</th>
+            <th style="text-align: center;" >Session</th>
+            <th>Transport</th>
+            <th>Auth Scheme</th>
+            <th style="text-align: center;" >Latency</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range .Servers}}
+        <tr class="{{ .GetTableCssClass }}" role="alert">
+
+            <td><a href="{{ .URL }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .DisplayName }}</a></td>
+            <td>{{ .MapKey }}</td>
+            <td>{{ .FQDN }}</td>
+            <td>{{ .Domain }}</td>
+            <td>{{ .ServerName }}</td>
+            <td style="text-align: center;">{{ .Connection.SessionID }}</td>
+            <td>{{ .Connection.NetTransport }}</td>
+            <td>{{ .Connection.AuthScheme}}</td>
+            <td style="text-align: center;"  data-text="{{ .Connection.Latency.Nanoseconds }}">{{ .Connection.Latency }}</td>
+            
+            <td title="{{ .LastPollError }}">{{ .LastPollErrorClean 45 }}</td>
+
+
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Servers }}
+
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#serverlist tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>   
+
+{{ end }}
+

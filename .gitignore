@@ -1,0 +1,63 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj
+_test
+
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+*.test
+*.prof
+*.log
+*.csv
+*.json
+
+
+license.txt
+servers.txt
+key*.txt
+resource.syso
+beta*.txt
+
+!versioninfo.json
+panic.txt
+uselocal*.txt
+ignoredBackups.txt
+
+# ignoring mssqlx directory for now
+/mssqlx
+
+# psmake writes here
+/deploy/
+
+# used by the app
+/cache/
+/log/
+/docs/
+/config/
+/servers/
+/local/
+
+
+
+# use by me 
+/working
+*.hcl
+isitsql_panic_*.txt
+isitsql_heap_*.pb.gz
+

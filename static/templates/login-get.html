@@ -1,0 +1,66 @@
+{{ define "head" }}
+    <!--<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> -->
+{{ end }}
+
+{{ define "content" }}
+
+{{ if .Error }}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-danger" role="alert">
+            {{ .Error }}
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ if .Message }}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-primary" role="alert">
+            {{ .Message }}
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ if .User.Account }}
+<div class="row">
+    <div class="col-md-12">
+        <p>Current User: {{ .User.Name }} ({{ .User.Account }})</p>
+    </div>
+</div>
+{{ end }}
+
+<div class="row">
+    <div class="col-md-3">
+
+        <h1>Login</h1>
+        <!--<form method="POST">
+            <input type="text" id="userName" name="userName"/>
+            <input type="submit" />
+        </form>-->
+        <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="userName">User Name</label>
+            <input type="text" class="form-control" id="userName" placeholder="b@c.com" name="userName" />
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" placeholder="Password" name="password" />
+        </div>
+        <!-- <div class="checkbox">
+            <label>
+            <input type="checkbox" id="rememberMe" name="rememberMe"> Remember Me
+            </label>
+        </div> -->
+        <button type="submit" value="login" class="btn btn-default" name="submit" {{if .LoggedIn}}disabled{{end}}>Login</button>
+        <button type="submit" value="logout" class="btn btn-default" name="submit" {{if not .LoggedIn }}disabled{{end}}>Logout</button>
+        </form>
+    </div>
+</div>
+
+{{ end }}

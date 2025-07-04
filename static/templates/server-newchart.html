@@ -1,0 +1,175 @@
+{{ define "head" }}
+<script type='text/javascript' src='/static/js/jquery-3.7.1.min.js'></script>
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+
+<script type='text/javascript' src="/static/js/chartjs/chart.js"></script>
+<script type='text/javascript' src="/static/js/chartjs/date-fns.js"></script>
+<script type='text/javascript' src="/static/js/chartjs/chartjs-adapter-date-fns.js"></script>
+<script type='text/javascript' src="/static/js/lodash.js"></script>
+<script type='text/javascript' src="/static/js/isitsql-charting-1.0.js"></script>
+
+
+{{ end }}
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<script type="text/javascript">
+    $(function(){
+        $("#sessions").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script  type="text/javascript" >
+  $(document).ready(
+      function() {
+        var pathArray = window.location.pathname.split( '/' );
+        var serverName = pathArray[2]
+        //PrintServerName("test")
+        var unixNow = {{ .UnixNow }}
+        //console.log("X" + "{{ .UnixNow }}")
+        //console.log(serverName)
+        
+        //console.log("Generating CPU")
+        {{/* GenerateCpuChart(serverName, "cpuChartDiv", unixNow)
+
+        //console.log("Generating Disk")
+        GenerateDiskChart(serverName, "diskChartDiv", unixNow)
+
+        //console.log("Generating Waits")
+        //GenerateWaitChart(serverName, "waitChartDiv", unixNow)
+        GenerateW2Chart(serverName, "w2ChartDiv", unixNow) */}}
+
+        NewCPUChart(serverName, "newCPU")
+
+        NewDiskChart(serverName, "newDisk")
+        NewWaitsChart("waits2", serverName, "newWaits")
+    }
+  );
+</script>
+
+
+{{ if .OneServer }}
+    <div class="row">
+        <div class="col-md-6">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; vertical-align: baseline; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} <a href="/settings/servers/edit/{{ .OneServer.MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog" style="font-size: 50%;"></span></a></h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+                    <p>
+                <strong>Version:</strong> {{ .OneServer.VersionString }} {{ .OneServer.ProductLevel }} {{ .OneServer.ProductUpdateLevel }} ({{ .OneServer.ProductVersion }}); 
+                {{/* <strong>OS:</strong> {{ .OneServer.OSName }} ({{ .OneServer.OSArch }}) */}}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+
+            <p>
+            <strong>Cores: </strong>{{ .OneServer.CpuCount }} core{{ .OneServer.CpuCount | pluralize "s" }}; 
+             <strong>Memory:</strong> 
+                    Used: {{ .OneServer.SqlServerMemoryKB | kbtostring }} /
+                    {{ if .OneServer.MaxMemorySet }} Max:  {{ .OneServer.MaxMemoryKB | kbtostring }} / {{ end }}
+                    Physical: {{ .OneServer.PhysicalMemoryKB | kbtostring }}
+                    {{ $freepct := int64topct .OneServer.AvailableMemoryKB .OneServer.PhysicalMemoryKB }}
+              <strong>OS Free:</strong>   {{ .OneServer.AvailableMemoryKB | kbtostring }} ({{ printf "%.1f" $freepct}}%)
+            </p>
+        </div>
+        <div class="col-md-6">
+            {{ with .OneServer }}
+                {{ $seconds := divide       .DiskIODelta.SampleMS 1000 }}
+                {{ $readVolume := divide    .DiskIODelta.ReadBytes $seconds }}
+                {{ $readLatency := divide   .DiskIODelta.ReadStall .DiskIODelta.Reads }}
+                {{ $avgRead := divide       .DiskIODelta.ReadBytes .DiskIODelta.Reads}}
+                {{ $avgWrite := divide      .DiskIODelta.WriteBytes .DiskIODelta.Writes}}
+                {{ $writeVolume := divide   .DiskIODelta.WriteBytes $seconds }}
+                {{ $writeLatency := divide  .DiskIODelta.WriteStall .DiskIODelta.Writes }}
+                <p>
+                    <strong>Reads:</strong> {{ $readVolume | bytes }}/sec; <span style="color:darkgray;">{{ divide .DiskIODelta.Reads $seconds | comma }} iops;  {{ $readLatency }}ms</span>  
+                    <strong>Writes:</strong> {{ $writeVolume | bytes }}/sec; <span style="color:darkgray;">{{ divide .DiskIODelta.Writes $seconds | comma }} iops;  {{ $writeLatency }}ms</span>  
+                </p>
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-4">
+            <div id="cpuChartDiv" style="height: 300px;"></div>
+        </div>
+        
+        <div class="col-md-4">
+            <!--<h1>{{ .OneServer.MapKey }}</h1>-->
+            <div id="diskChartDiv" style="height: 300px"></div>
+        </div>
+        
+        
+        <div class="col-md-4">
+            
+            
+            <div id="w2ChartDiv" style="height: 300px"></div>
+        </div>
+        
+        
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-4">
+            <div style="height: 300px;">
+            <p class="chart-title">CPU Usage & Activity</p>
+             <canvas id="newCPU"></canvas>
+             </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div style="height: 300px">
+            <p class="chart-title">Disk Usage</p>
+            <canvas id="newDisk"></canvas>
+            </div>
+        </div>
+        
+        
+        <div class="col-md-4">
+            
+            
+            <div style="height: 300px">
+            <p class="chart-title">Dynamic Waits</p>
+            <canvas id="newWaits"></canvas>
+            </div>
+        </div>
+        
+        
+    </div>
+    
+
+
+{{ else  }}
+
+<div class="row">
+        <div class="col-md-6">
+            <h1>Server Not Found</h1>
+        </div>
+        
+    </div>
+
+{{ end }}
+    
+
+    
+
+{{ end }}

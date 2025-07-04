@@ -1,0 +1,194 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script>
+{{ end }}
+
+
+
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#databaseList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+    $(function(){
+        $("#snapshotList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+</script>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }}</h1>
+            {{ if .OneServer.BackupMessage }}
+            <div class="alert alert-warning" role="alert">
+                {{ .OneServer.BackupMessage }}
+            </div>
+            {{ end }}
+        </div>
+        
+    </div>
+
+    {{ $key := .OneServer.MapKey }}
+
+    <div class="row">
+        
+        <div class="col-md-12">
+
+        <table class="table tablesorter" id="databaseList">
+        <thead>
+            <tr>
+                <th>Database</th>
+                <th style="text-align: center;">State</th>
+                <th style="text-align: center;">Recovery</th>
+                <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Data
+                </th>
+                <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Log
+                </th>
+                <th style="text-align: center;" title="Database Compatibility Level">Compat</th>
+                <!--<th style="text-align: center;">Collation</th>-->
+                <th style="text-align: center;" title="Last Full Backup.  Backups poll every five minutes">Full</th>
+                <th style="text-align: center;" title="Last Log Backup.  Backups poll every five minutes">Log</th>
+
+                <th>HADR</th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Send</th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Redo</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {{ $now := .OneServer.CurrentTime}}
+       
+        {{range .Databases}}
+
+            {{ if .BackupAlert }}
+                {{ $databaseAlert := "alert alert-warning"}}
+            {{ end }}
+
+            <tr class="{{ if .BackupAlert }}alert-warning{{ end }}" role="alert">
+                <td>{{ .Name }} {{if .IsReadOnly }}<span style="color:darkgray;"> (read-only)</span>{{end}}</td>
+                {{/* <td><a href="/server/{{ $key }}/databases/{{ .Name }}">{{ .Name }}</a></td> */}}
+                <td style="text-align: center;">{{ .StateDesc }}</td>
+                <td style="text-align: center;">{{ .RecoveryModelDesc }}</td>
+                <td style="text-align: center;">
+                    {{ if .DataSizeKB }} {{ .KBToString .DataSizeKB }} {{ end }}
+                </td>
+
+                <td style="text-align: center; color:darkgray;">
+                    {{ if .LogSizeKB }}{{ .KBToString .LogSizeKB }}{{ end }}
+                </td>
+
+                <td style="text-align: center;">{{ .CompatibilityLevel }}</td>
+                <!--<td style="text-align: center;">{{ .Collation }}</td>-->
+                
+                <td style="text-align: center;" data-text="{{ .LastBackup | timetoYMDT }}" 
+                    {{ if hasTimeValue .LastBackup }}title="{{ .LastBackup | timetoYMDT }} (server time zone) to {{ .LastBackupDevice }} on {{ .LastBackupInstance }}"{{end}}>
+                        {{ if hasTimeValue .LastBackup }}
+                            {{ durationDifference .LastBackup $now }}
+                        {{end}}
+                </td>
+                
+                {{ if eq .RecoveryModelDesc "SIMPLE" }}
+                    <td></td>
+                {{else }}
+                    <td style="text-align: center;" data-text="{{ .LastLogBackup | timetoYMDT}}" 
+                        {{ if hasTimeValue .LastLogBackup }}title="{{ .LastLogBackup | timetoYMDT }} (server time zone) to {{ .LastLogBackupDevice }} on {{ .LastLogBackupInstance }}"{{end}}>
+                            {{ if hasTimeValue .LastLogBackup }}
+                                {{ durationDifference .LastLogBackup $now }}
+                            {{end }}
+                    </td>
+                {{ end }} 
+
+                <td title="{{.HADRHover}}">{{.HADRField}}</td>
+                {{ if .IsHADR }}
+                    {{ if gt .SendQueueKB 0}}<td style="text-align: right;">{{ .SendQueueKB | kbint2string }}</td>{{ else }}<td></td>{{end }}
+                    {{ if gt .RedoQueueKB 0}}<td style="text-align: right;">{{ .RedoQueueKB | kbint2string }}</td>{{ else }}<td></td>{{end }}
+                {{ else }}
+                    {{ if .IsMirrored }}
+                    <td style="text-align: right;" title="{{ .Mirroring.MirrorSendQueue | intcomma }} KB">{{ .KBToString .Mirroring.MirrorSendQueue }}</td>
+                    <td style="text-align: right;" title="{{ .Mirroring.MirrorRedoQueue | intcomma }} KB">{{ .KBToString .Mirroring.MirrorRedoQueue }}</td>
+                    {{ else }}
+                    <td></td>
+                    <td></td>
+                    {{ end }}
+                {{ end }}
+                {{/* {{ if .IsMirrored }}
+                    <td title="Partner: {{ .Mirroring.MirrorPartner }}; Witness: {{ .Mirroring.MirrorWitness }} ({{ .Mirroring.MirrorWitnessStateDesc }})">
+                        {{ .Mirroring.MirrorRoleDesc }}, {{ .Mirroring.MirrorStateDesc }}, {{ .Mirroring.MirrorSafetyDesc }}
+                    </td>
+                    <td style="text-align: right;" title="{{ .Mirroring.MirrorSendQueue | intcomma }} KB">{{ .KBToString .Mirroring.MirrorSendQueue }}</td>
+                    <td style="text-align: right;" title="{{ .Mirroring.MirrorRedoQueue | intcomma }} KB">{{ .KBToString .Mirroring.MirrorRedoQueue }}</td>
+                {{ else }}
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                {{ end }} */}}
+            </tr>
+        {{ end }}
+        </tbody>
+        </table>
+
+
+        {{ if not .Databases }}
+            <div class="row">
+                <div class="col-md-12 text-center" >
+                    
+                    <p class="lead" style="margin-top: 30pt;" >We didn't find any databases...</p>
+                    <p style="margin-top: 30pt;" >Either they haven't polled yet or the service account needs the <code>VIEW ANY DEFINITION</code> permission.</p>
+                </div>
+            <div>
+        {{ end }}
+
+        </div>
+        
+    </div>
+
+    {{ if .Snapshots }}
+    <div class="row">
+        <div class="col-md-12">
+        <h3 id="snapshots">Database Snapshots</h3>
+        <table class="table tablesorter" id="snapshotList">
+            <thead>
+                <tr>
+                    <th>Snapshot</th>
+                    <th>Source</th>
+                    <th style="text-align: center;">Size on Disk</th>
+                    <th style="text-align: center;">Created</th>
+                </tr>
+            </thead>
+
+        {{ range .Snapshots }}
+             <tr>
+             <td>{{ .Name }}</td>
+             <td>{{ .Source }}</td>
+             <td style="text-align: center;" data-text="{{ .Size }}">{{ .Size | bytes }}</td>
+             <td title='{{ .Created.Format "Mon, 02 January 2006 3:04 PM" }} (server time zone)' style="text-align: center;">{{ .CreatedUTC | shortDuration }}</td>
+             </tr>
+        {{end}}
+        </table>
+        </div>
+    </div>
+    {{ end }}
+
+{{ end }}

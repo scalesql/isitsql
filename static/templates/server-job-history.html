@@ -1,0 +1,100 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    $(function(){
+        $("#tableList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} </h1>
+    </div>
+</div>
+
+{{ if .Problems }}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <ul>
+            {{range $k, $v := .Problems}}
+                <li>{{ $v }}</li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+{{ end }}  
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Job: {{ .Job.Name }}</h2>
+        {{ if .JobStepLogs }}<p><a href="{{ .Job.StepLogURL }}">View Job Step Logs</a></p>{{end}}
+        {{ if or .JobCurrent .Job.ExecutionStatusDescription }}
+        <p>
+        <h3>{{ .Job.ExecutionStatusDescription}}: Step: {{ .Job.ExecutionStep}}</h3>
+            <table class="table table-striped" id="tableList">
+                <thead>
+                    <th>Time (local)</th>
+                    <th>Step</th>
+                    <th>Result</th>
+                    <th>Dur</th>
+                    <th>Message</th>
+                </thead>
+                <tbody>
+                    {{ range $key, $v := .JobCurrent}}
+                        <tr>
+                            <td>{{ .RunTimeNative.Format "2006-01-02 3:04 PM" }}</td>
+                            <td>{{ .StepName.String }} ({{ .StepID}})</td>
+                            <td>{{ .RunStatusDescription }}{{if .RetriesAttempted}} (#{{.RetriesAttempted}}){{end}}</td>
+                            <td>{{ .RunDurationNative }}</td>
+                            <td>{{ if .MessageHTML }}{{ .MessageHTML}}{{ else }} {{ .Message.String }}{{ end }}</td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+
+        {{ end }}
+        <h3>History</h3>
+            <table class="table table-striped" id="tableList">
+                <thead>
+                    <th>Time (local)</th>
+                    <th>Result</th>
+                    <th>Dur</th>
+                    <th>Message</th>
+                </thead>
+                <tbody>
+                    {{ range $key, $v := .JobHistory}}
+                        <tr>
+                            <td><a href="{{$v.MessagesURL}}">{{ .RunTimeNative.Format "2006-01-02 3:04 PM" }}</a></td>
+      
+                            <td>{{ .RunStatusDescription }}</td>
+                            <td>{{ .RunDurationNative }}</td>
+                            <td>{{ .Message.String }}</td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+    </div>
+</div>
+
+{{ end }}

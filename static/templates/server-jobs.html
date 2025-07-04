@@ -1,0 +1,120 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    $(function(){
+        $("#jobtable").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    $(function(){
+        $("#historytable").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} </h1>
+    </div>
+</div>
+
+{{ if .Problems }}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <ul>
+            {{range $k, $v := .Problems}}
+                <li>{{ $v }}</li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+{{ end }}  
+
+<div class="row">
+    <div class="col-md-12">
+        {{/* <h2>Agent Jobs</h2> */}}
+        {{ if .JobHistory }}
+        <h2>Currently Running</h2>
+        {{ end }}
+        <table class="table table-striped" id="jobtable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Last Run</th>
+                    <th>Last Run <span style="color: gray;">(local time)</span></th>
+                    <th>Next Run <span style="color: gray;">(local time)</span></th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .Jobs}}
+                <tr class="{{if $value.CSSClass}}{{$value.CSSClass}}{{end}}" style="{{if not $value.Enabled}}color:silver;{{end}}">
+                    <td style="white-space: nowrap; " title="{{$value.Description}}">
+                    <a href="{{$value.HistoryURL}}">{{ $value.Name }}</a>{{if not $value.Enabled}} [Disabled]{{end}}
+                    </td>
+                    <td>
+                        {{$value.ExecutionStatusDescription -}}
+                        {{- if $value.ExecutionStep }}: {{$value.ExecutionStep}}{{end}}
+                    </td>
+                    <td>{{ $value.LastRunOutcome }}</td>
+                    <td>{{ if not $value.LastRun.IsZero}}{{ $value.LastRun.Format "2006-01-02 3:04 PM" }}{{end}}</td>
+                    <td>{{ if and (not $value.NextRun.IsZero) ($value.Enabled)}}{{ $value.NextRun.Format "2006-01-02 3:04 PM" }}{{end}}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+
+        <h2>Recent Failures (last 7 days)</h2>
+        {{ if .JobHistory }}
+            <table class="table table-striped" id="historytable">
+                <thead>
+                    <th>Time (local)</th>
+                    <th>Job</th>
+                    <th>Result</th>
+                    <th>Dur</th>
+                    <th>Message</th>
+                </thead>
+                <tbody>
+                    {{ range $key, $v := .JobHistory}}
+                        <tr>
+                            <td><a href="{{$v.MessagesURL}}">{{ .RunTimeNative.Format "2006-01-02 3:04 PM" }}</a></td>
+                            <td><a href="{{$v.JobURL}}">{{ .JobName.String }}</a></td>
+                            <td>{{ .RunStatusDescription }}</td>
+                            <td>{{ .RunDurationNative }}</td>
+                            <td>{{ .Message.String }}</td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+                {{ end }}
+    </div>
+</div>
+
+{{ end }}

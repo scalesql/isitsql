@@ -1,0 +1,98 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+<style>
+
+    .graphic-number {
+        font-size: 250%; 
+        margin-bottom: 0px;
+        }
+
+</style>
+{{ end }} 
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+<div class="container">
+    <h1>Activity</h1>
+    <div class="row">
+
+        <div class="col" style="text-align: center;">
+            <p class="graphic-number">{{ .TotalLine.SQLPerSecond | comma }}</p>
+            <p>SQL/sec</p>
+
+            <p class="graphic-number">{{ divideint .TotalLine.CoreUsageFactor .TotalLine.CPUCount }}%</p>
+            <p>CPU</p>
+        </div>
+        <div class="col" style="text-align: center;">
+            <p class="graphic-number">{{ .TotalLine.DiskIO.ReadBytes | bytes }}</p>
+            <p>Read/sec</p>
+
+        <p class="graphic-number">{{ .TotalLine.DiskIO.Reads | comma }}</p>
+            <p>Reads IOPS</p>
+        </div>
+        <div class="col"  style="text-align: center;">
+        <p class="graphic-number">{{ .TotalLine.DiskIO.WriteBytes | bytes }}</p>
+            <p>Written/sec</p>
+       
+        <p class="graphic-number">{{ .TotalLine.DiskIO.Writes | comma }}</p>
+            <p>Write IOPS</p>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <h1>Resources</h1>
+
+        <div class="col" style="text-align: center;">
+            <p class="graphic-number">{{ .TotalLine.Count | comma}}</p>
+            <p>Instance{{ .TotalLine.Count | pluralize "s" }}</p>
+
+            <p class="graphic-number">{{ .TotalLine.MachineCount | comma }}</p>
+            <p>Server{{ .TotalLine.MachineCount | pluralize "s" }}</p>
+        </div>
+        <div class="col" style="text-align: center;">
+            <p class="graphic-number">{{ .TotalLine.CPUCount | commaint }}</p>
+            <p><span title="This is the core count that SQL Server sees.  These may be physical, virtual or hyper-threaded.">Core{{ .TotalLine.CPUCount | pluralize "s" }}<span></p>
+
+            <p class="graphic-number">{{ .TotalLine.SQLServerMemoryKB | kbtostring }}</p>
+            <p>Memory Used</p>
+        </div>
+
+        <div class="col" style="text-align: center;">
+            <p class="graphic-number">{{ .TotalLine.Databases | commaint }}</p>
+            <p>Database{{ .TotalLine.Databases | pluralize "s" }}</p>
+
+            <p class="graphic-number">{{ .TotalLine.DataSizeKB | kbtostring }}</p>
+            <p>Data Files</p>
+
+            <p class="graphic-number">{{ .TotalLine.LogSizeKB | kbtostring }}</p>
+            <p>Log Files</p>
+        </div>
+    </div>
+</div>
+
+{{ end }}
+

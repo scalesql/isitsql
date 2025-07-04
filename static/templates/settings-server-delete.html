@@ -1,0 +1,121 @@
+{{ define "head" }}
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+<ul class="nav nav-tabs menu-line-2">
+    <li class="nav-item"><a class="nav-link" href="/settings/servers">Servers</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings/credentials">Credentials</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings">Settings</a></li>
+</ul>
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<div class="row">
+    <div class="col-md-8">
+
+        <h1>DELETE SQL Server</h1>
+
+      
+        {{ $credentialKey := .FormValues.CredentialKey }}        
+
+        <div class="container">
+        <form  method="POST" action="/settings/servers/delete/{{ .ServerKey }}">
+            
+            <!--<div class="row">
+            </div>-->
+            
+            <div class="row">
+                <div class="form-group col-sm-8">
+                    <label for="fqdn" class="control-label">Fully-Qualified Domain Name</label>
+                    <input type="text"  disabled  class="form-control" id="fqdn" placeholder="" name="fqdn" value="{{ .FormValues.FQDN }}">
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="form-group col-sm-5">
+                    <label for="friendlyName" class="control-label">Friendly Name</label>
+                    <input type="text"  disabled class="form-control" id="friendlyName" placeholder="" name="friendlyName" value="{{ .FormValues.FriendlyName }}">
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="form-group col-sm-3">
+                    <label for="connection" class="control-label">Connection Type</label>
+                    <select class="form-control"  disabled id="connection" name="connection"  onChange="javascript:changeTextBoxState(this)">
+                        <option {{ if eq .FormValues.Connection "trusted" }} selected {{ end }} value="trusted">Windows Authentication (Trusted)</option>
+                        <option {{ if eq .FormValues.Connection "userpass" }} selected {{ end }} value="userpass">SQL Server Login</option>
+                        <option {{ if eq .FormValues.Connection "custom" }} selected {{ end }} value="custom">Custom Connection String</option>
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="form-group col-sm-5">
+                    <label for="Login" class="control-label">Login Name</label>
+                    <input  disabled type="text" class="form-control" id="Login" placeholder="" name="Login" value="{{ .FormValues.Login }}">
+
+                    <label for="Password" class="control-label">Password</label>
+                    <input  disabled type="password" class="form-control" id="Password" placeholder="" name="Password" value="">
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="form-group col-sm-12">
+                    <label for="ConnectionString" class="control-label">Custom Connection String</label>
+                    <input  disabled type="text" class="form-control" id="ConnectionString" placeholder="" name="ConnectionString" value="{{ .FormValues.ConnectionString }}">
+                </div>
+            </div>
+
+
+            <div class="row">
+                <div class="form-group col-sm-6">
+                    <label for="Tags" class="control-label">Tags</label>
+                    <input  disabled type="text" class="form-control" id="Tags" placeholder="" name="Tags" value="{{ .FormValues.Tags }}">
+                </div>
+            </div>
+
+
+
+            <div class="form-group">
+     
+                <button type="submit"  {{if ne .EnableSave true}}disabled{{end}}  class="btn btn-default">DELETE</button>
+            </div>
+        </form>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Notes</h2>
+        <ol>
+            <li>FQDN is the fully qualified domain name.  This name (and port) must resolve from
+                the server where Is It SQL is running.  Examples include:
+                <ul>
+                    <li>ServerName</li>
+                    <li>S2.yourdomain.local</li>
+                    <li>Myserver\AnInstance</li>
+                    <li>TheServer.Domain.com,3456 - using a custom port</li>
+                    
+                </ul>
+            <li>Friendly Name is optional and will override the instance name if entered</li>
+            <li>Tags is a comma-separated list of tags.  Leave it empty to not assign any tags.  Examples: </li>
+                <ul>
+                    <li>prod-usa,replication</li>
+                    <li>dev,billing,kc</li>
+                </ul>
+        </ol>
+    </div>
+</div>
+
+{{ end }}

@@ -1,0 +1,71 @@
+{{ define "content" }}
+  <div class="page-header">
+    <h1>{{ .Title }}</h1>
+  </div>
+  <p>JSON testing</p>
+  
+ <script type='text/javascript' src='/static/js/jquery-3.7.1.min.js'></script>
+ 
+ 
+ <p id="demo"></p>
+
+<script>
+var text = '{"name":"John Johnson","street":"Oslo West 16","phone":"555 1234567"}';
+
+var obj = JSON.parse(text);
+
+document.getElementById("demo").innerHTML =
+obj.name + "<br>" +
+obj.street + "<br>" +
+obj.phone;
+</script>
+
+
+ 
+ <div id="legend">test</div>
+ 
+  <div id="out2">test</div>
+ 
+ <pre >test2</pre>
+ 
+<script type="text/javascript"> 
+   // var data 
+  $.getJSON('http://localhost:8000/api/', function(data) {
+      //var count = data.query.count;
+      console.log(data)
+      document.getElementById('legend').innerHTML = data.Name;
+      console.log(data.Name)
+      myFunction(data.RecentCpu);
+
+//var jsonStr = data
+
+// var jsonPretty = JSON.stringify(jsonObj, null, '\t');
+// 
+// $("pre").text(jsonPretty);
+
+
+    //data is the JSON string
+});
+
+function myFunction(arr) {
+    var out = "";
+    var i;
+    for(i = 0; i < arr.length; i++) {
+        out += '<p>' + arr[i].EventTime  +  '</p>';
+    }
+    document.getElementById("out2").innerHTML = out;
+}
+
+
+//var jsonStr = $("pre").text();
+// var jsonStr = data
+// var jsonObj = JSON.parse(jsonStr);
+// var jsonPretty = JSON.stringify(jsonObj, null, '\t');
+// 
+// $("pre").text(jsonPretty);
+
+
+
+</script>
+
+{{ end }}

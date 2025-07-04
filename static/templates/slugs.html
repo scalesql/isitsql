@@ -1,0 +1,84 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+
+{{ end }}
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+
+        $("#list").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+</script>
+
+<div class="row">
+        <div class="col-md-12">
+            <h1>Slugs  &nbsp; <a href="/slugs" title="Refresh page..."><span class="glyphicon glyphicon-refresh" aria-hidden="true" style="font-size: 60%;"></span></a></h1>
+            <p>Filter: <input type="text" id="filter" name="filter">  </p>
+            <table class="table tablesorter" id="list" >
+                <thead>
+                    <tr>
+                        <th>Server</th>
+                        <th>FQDN</th>
+                        <th>URL</th>
+                        <th>Slug</th>
+                        <th>Friendly Name</th>
+                        <th>Tags</th>
+                        <th>Domain</th>
+                        <th>Server Instance</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range $k, $v := .Servers }}
+                    {{ $tagString := arrayToCSV $v.Tags}}
+          
+
+                    <tr class="{{ .CSSTableClass }}">
+                    <td><a href="/settings/servers/edit/{{ $v.Key}}">{{ $v.FQDN }}</a></td>
+                        <td>{{ $v.FQDN }}</td>
+                        <td><a href="{{ .SlugURL }}">{{ .SlugURL }}</a></td>
+                        <td>{{ $v.SlugOverride }}
+                        <td>{{ $v.FriendlyName  }}</td>
+                        <td>{{ $tagString }}</td>
+                        
+                        <td>{{ $v.Domain }}</td>
+                        <td>{{ $v.ServerName }}</td>
+                        {{/* <td><a href="{{ .URL }}">{{ .URL }}</a></td> */}}
+                        
+                        <td title="{{ .LastPollError }}">{{ .LastPollErrorClean }}</td>
+                    </tr>
+                {{ end }}
+
+                </tbody>
+            </table>
+        </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#list tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}

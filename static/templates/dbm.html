@@ -1,0 +1,89 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 10000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#databaseList").tablesorter({
+            widgets: ["saveSort"]
+        });
+    });
+
+</script>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Mirrored Databases</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-12">
+
+        <table class="table tablesorter" id="databaseList">
+        <thead>
+            <tr>
+                <th>Database</th>
+                <th>Server</th>
+                <th>Role</th>
+                <th>State</th>
+                <th>Safety</th>
+                <th>Partner</th>
+                <th>Witness</th>
+                <th style="text-align: center;" data-sortInitialOrder="desc">Priority</th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Send</th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Redo</th>
+                <th  style="text-align: center;">Poll</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {{ range .Databases }}
+            <tr {{ if .Priority }}class="alert alert-warning"{{ end }}>
+                <td>{{ .DatabaseName }}</td>
+                <td><a href="{{ .URL }}">{{ .ServerName }}</a></td>
+                <td>{{ .MirrorRoleDesc }}</td>
+                <td>{{ .MirrorStateDesc }}</td>
+                <td>{{ .MirrorSafetyDesc }}</td>
+                <td>{{ .MirrorPartner }}</td>
+                <td> {{ if .MirrorWitness }}
+                    {{ .MirrorWitness }} ({{ .MirrorWitnessStateDesc }})
+                    {{ end }}
+                </td>
+                <td style="text-align: center;">{{ if .Priority }}{{ .Priority }}{{ end }}</td>
+                <td style="text-align: right;" title="{{ .MirrorSendQueue | intcomma }} KB">{{ .MirrorSendQueue | kbtostring }}</td>
+                <td style="text-align: right;" title="{{ .MirrorRedoQueue | intcomma }} KB">{{ .MirrorRedoQueue | kbtostring }}</td>
+                <td style="text-align: center;" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
+            </tr>
+        {{ end }}
+        </tbody>
+        </table>
+
+        {{ if not .Databases }}
+            <p><em>Note: No mirrored databases found</em></p>
+        {{ end }}
+        
+
+        </div>
+
+   
+    </div>
+
+{{ end }}

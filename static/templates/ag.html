@@ -1,0 +1,155 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script>
+{{ end }}
+
+
+
+{{ define "content" }}
+
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 10000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#aglist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+
+    <div class = "row">
+        <div class="col-md-12">
+
+            {{ $mapLength := .AGSummary | length }}
+            {{ if eq $mapLength 0 }}
+            <p><em>Note: No Availability Groups found.</em></p>
+            {{ end }}
+
+            <h1>Availability Groups</h1>
+            <table class="table tablesorter" id="aglist">
+                <thead>
+                    <tr>
+                        <th data-sortInitialOrder="asc">Listener (Availability Group)</th>
+                        <th>Health</th>
+                        <th>State</th>
+                        <th>Primary Replica</th>
+                        <th   class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc" style="text-align: right;">Send Queue</th>
+                        <th   class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc" style="text-align: right;">Redo Queue</th>
+                        <th style="text-align: center;">Last Poll</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .AGSummary }}
+
+                        <tr class="{{ .HTMLClass }}">
+                            <td style="font-weight: bold;"><a href="#{{ .GUID }}" title="{{ .Name}}">{{ .DisplayName }}</a></td>
+                            <td>{{ .Health }}</td>
+                            <td>{{ .State }}</td>
+                            <td title="{{ .PrimaryGUID }}"><a href="/server/{{ .PrimaryGUID }}">{{ .PrimaryReplica }}</a></td>
+                            <td style="text-align: right;">
+                                {{ if gt .SendQueue 0 }}{{ kbtostring .SendQueue }}{{ end }} 
+                                
+                            </td>
+                            <td style="text-align: right;">
+                                {{ if gt .RedoQueue 0 }}{{ kbtostring .RedoQueue }}{{ end }} 
+                                
+                            </td>
+                            <td style="text-align: center;" data-text="{{ .PollTime  | timetoYMDT}}" title="{{ .PollTime  | timetoYMDT}}">{{ .PollTime | shortDuration }}</td>
+                        </tr>
+
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+
+            {{ $mapLength := .AGs | length }}
+            {{ if eq $mapLength 0 }}
+            <p><em>Note: No Availability Groups found.</em></p>
+            {{ end }}
+        
+            {{ range .AGs}}
+                {{ $primaryGUID := .PrimaryGUID}}
+                <div class="{{ if not .IsHealthy }}alert alert-danger{{ end }}">
+                    <h2><a id="{{ .GUID }}">{{ .DisplayName }}</a></h2>
+                    <p><strong>{{ .Name }}</strong> is <strong>{{ .State }}</strong> 
+                        and <strong>{{ .Health }}</strong> 
+                        on <strong>{{ .PrimaryReplica }}</strong> 
+                        <span title="{{ .PollTime }}">({{ .PollTime | shortDuration }})</span>
+                    </p>
+                </div>
+
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Replica</th>
+                            <th>Role</th>
+                            <th>Availability Mode</th>
+                            <th>Failover Mode</th>
+                            <th style="text-align: center;" title="(Databases Ready for Failover / Total AG Databases)">Ready</th>
+                            <th>State</th>
+                            <th>Synchonization</th>
+                            <th style="text-align: right;">Send Queue</th>
+                            <th style="text-align: right;">Redo Queue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        {{ range .Replicas }}
+ 
+                            <tr class="{{ if not .IsHealthy }}danger{{ end }}">
+                                <td {{ if .IsPrimary }}style="font-weight: bold;"{{ end }}>
+                                    {{ if .IsPrimary }}
+                                        <a href="/server/{{ $primaryGUID }}">{{ .Name }}</a>
+                                    {{ else }}
+                                        {{ .Name }}
+                                    {{ end }}
+                                </td>
+                                <td {{ if .IsPrimary }}style="font-weight: bold;"{{ end }}>{{ .Role }}</td>
+                                <td>{{ .AvailabilityMode }}</td>
+                                <td>{{ .Failover }}</td>
+                                <td style="text-align: center;" title="(Databases Ready for Failover / Total AG Databases)">
+                                {{ if eq .AvailabilityMode  "SYNCHRONOUS_COMMIT" }}
+                                    {{ .ReadyDatabases }}/{{ .TotalDatabases}}
+                                {{end}}
+                                </td>
+                                <td>{{ .State }}</td>
+                                <td>{{ .Health }}</td>
+                                <td style="text-align: right;">
+                                    {{ if gt .SendQueue 0 }}{{ kbtostring .SendQueue }}{{ end }} 
+                                    
+                                </td>
+                                <td style="text-align: right;">
+                                    {{ if gt .RedoQueue 0 }}{{ kbtostring .RedoQueue }}{{ end }} 
+                                    
+                                </td>
+                                
+                            </tr> 
+                        {{ end }}
+                    </tbody>
+                </table>
+
+
+            {{ end }}
+        </div>
+    </div>
+
+    <p><a href="/ag">Top</a></p>   
+
+{{ end }}

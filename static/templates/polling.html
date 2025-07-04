@@ -1,0 +1,72 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 10000);
+    }
+</script>
+
+<script type="text/javascript">
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+</script>
+
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Instance</th>
+            <th style="text-align: center;">Is Polling</th>
+            <th>Polling Started</th>
+            <th>Duration</th>
+            <th style="text-align: center;">Last Poll</th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range .Polls}}
+        <tr class="{{ .CSSClass }}" role="alert">
+            <td><a href="/server/{{ .MapKey }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .DisplayName }}</a></td>
+            <td style="text-align: center;">{{ if .IsPolling }}{{ .IsPolling }}{{ end }}</td>
+            <td data-text="{{ .PollStart | timetoYMDT }}" title="{{ .PollStart }}">{{ .PollStart }}</td>
+            <td data-text="{{ .PollDuration.Nanoseconds }}">{{ .PollDuration }}</td>
+            <td style="text-align: center;" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
+            <td title="{{ .LastPollError }}">{{ .LastPollErrorClean }}</td>
+            <td><a href="/settings/servers/edit/{{ .MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
+
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Polls }}
+
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+{{ end }}
+

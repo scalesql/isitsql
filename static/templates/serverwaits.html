@@ -1,0 +1,110 @@
+{{ define "head" }}
+
+
+{{ end }}
+
+
+
+
+{{ define "content" }}
+  
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#waitTable").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+
+
+</script>
+    
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1>{{ .OneServer.ServerName }}</h1>
+         <div>
+    </div>
+    
+    <div class="row">
+        
+        <div class="col-md-4">
+            {{ $sortedArray := .WaitGroupList.SortedKeys }}
+            
+            
+            <table class="table">
+            <thead>
+                <tr>
+                    <th>Wait Group</th>
+                    <th style="text-align: right;">Milliseconds</th>
+                </tr>
+            </thead>
+            <tbody>
+        
+            {{ $mymap := .WaitGroupList.BaseMap }}
+            {{range $wg := $sortedArray}}
+                <tr>
+                    <td>{{ $wg }}</td>
+                    <td style="text-align: right;">{{ index $mymap $wg }}</td>
+    
+                </tr>
+            {{end}}
+            </tbody>
+            </table>
+        </div>
+        
+        <div class="col-md-8">
+            
+            {{ $waits := .WaitList}}
+            
+            <table class="table table-striped tablesorter" id="waitTable">
+            <thead>
+                <tr>
+                    <th>Wait</th>
+                    <th style="text-align: right;">Milliseconds</th>
+                    <th>Mapped To </th>
+                    <th>Excluded</th>
+
+                </tr>
+            </thead>
+            <tbody>
+            {{range $waits}}
+                {{ if .Excluded }}
+                <tr>
+                {{ else }}
+                <tr class="success">
+                {{ end }}
+                    <td>{{ .Wait }}</td>
+                    <td style="text-align: right;">{{ .Duration }}</td>
+                    <td>{{ .MappedTo }}</td>
+                    <td>{{ .Excluded }}</td>
+                </tr>
+            {{end}}
+            </tbody>
+            </table>
+            
+        </div>
+            
+    </div>
+    
+    <div class = "row">
+        <div class="col-md-12">
+            <h2>Raw Wait Structure</h2>
+            <pre>{{ .RawJSON }}</pre>
+        </div>
+    </div>
+    
+
+{{ end }}

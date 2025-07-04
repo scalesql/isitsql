@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--<meta http-equiv="refresh" content="15">-->
+    <title>{{ .Title }}</title>
+    <link href="/static/css/bootstrap-5.2.3.min.css" rel="stylesheet">
+    <script src="/static/js/bootstrap-5.2.3.bundle.min.js"></script>
+    <link rel="stylesheet" href="/static/css/isitsql.css" type="text/css">
+    <script src="/static/js/jquery-3.7.1.min.js"></script>
+    <link rel="shortcut icon" href="/static/img/favicon-16x16.png">
+
+    {{ template "head" . }}
+  </head>
+   <body>
+
+
+  <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ .AppConfig.HomePageURL }}">Is It SQL</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <!-- <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Home</a></li> -->
+        <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+        {{ if ne .AppConfig.HomePageURL "/" }}
+          <li class="nav-item"><a class="nav-link" href="/">All Servers</a></li>
+        {{ end }}
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Tags {{ if .SelectedTag }}<strong>({{ .SelectedTag }})</strong> {{ end }} <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="/">All Servers</a></li>
+            <li><a class="dropdown-item" href="/user-tags">User Tag Summary</a></li>
+
+            <!-- System Tags -->
+            <li><a class="dropdown-item" href="/auto-tags">Auto-Generated Tag Summary</a></li>
+
+            <li class="dropdown dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Auto-Generated Tags</a>
+              <ul class="dropdown-menu">
+                {{range .TagList }}{{- if .IsGenerated }}
+                <li><a class="dropdown-item" href="/tag/{{ .AsEntered }}">{{ .AsEntered }}</a></li>{{ end -}}{{ end }}
+              </ul>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+
+            {{range .TagList }}{{- if not .IsGenerated }}
+                <li><a class="dropdown-item" href="/tag/{{ .AsEntered }}">{{ .AsEntered }}</a></li>{{ end -}}
+              {{ end }}
+          </ul>
+        </li>
+
+
+      <!-- Global --> 
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Global<span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <li><a class="dropdown-item" href="/ag">Availability Groups</a></li>
+          <li><a class="dropdown-item" href="/backups">Backup Issues</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/mirroring">Database Mirroring</a></li>
+          <li><a class="dropdown-item" href="/snapshots">Database Snapshots</a></li>
+          <li><a class="dropdown-item" href="/versions">SQL Server Versions</a></li>
+          <li><a class="dropdown-item" href="/memory">SQL Server Memory</a></li>
+          <li><a class="dropdown-item" href="/jobs">Agent Jobs (BETA)</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/usage">SQL Server Usage (BETA)</a></li>
+          <li><a class="dropdown-item" href="/ips">IP Addresses (BETA)</a></li>
+          <li><a class="dropdown-item" href="/connections">Outbound Connections</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/infographic">Summary</a></li>
+        </ul>
+      </li>
+
+      <!-- Settings -->
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Settings<span class="caret"></span>
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <li><a class="dropdown-item" href="/settings/servers">Monitored Servers</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/settings/credentials">Credentials</a></li>
+          <li><a class="dropdown-item" href="/settings">Settings</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/login">Login</a></li>
+          <li><a class="dropdown-item" href="/log">Application Log</a></li>
+          <li class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/about">About</a></li>
+        </ul>
+      </li>
+
+      </ul>
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/log" title="Application Log">Refreshed: {{ now.Format "3:04:05 PM" }} </a>
+        </li>
+      </ul> 
+    </div>
+  </div>
+</nav>
+
+
+    {{ block "menu-line-2" . }} {{ end }}
+
+    {{ if .ServerPageActiveTab }}
+
+      <ul class="nav nav-tabs menu-line-2">
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "activity"}}  active{{end}}"  href="{{ .OneServer.URL }}">Activity</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "databases"}} active{{end}}" href="{{ .OneServer.URL }}/databases">Databases</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "w2"}} active{{end}}" href="{{ .OneServer.URL }}/w2">Waits</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "info"}} active{{end}}" href="{{ .OneServer.URL }}/info">Info</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "all-jobs"}} active{{end}}" href="{{ .OneServer.URL }}/jobs/all">All Jobs</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "active-jobs"}} active{{end}}" href="{{ .OneServer.URL }}/jobs/active">Active Jobs</a></li>
+        <li class="nav-item"><a class="nav-link {{if eq .ServerPageActiveTab "xe"}} active{{end}}" href="{{ .OneServer.URL }}/xe">Extended Events</a></li>
+      </ul>
+
+    {{ end }}
+
+    <div class="container-fluid">
+
+      {{ if .Message }}
+          <div class="alert {{ .MessageClass }}" role="alert">{{ .Message }}</div>
+      {{ end }}
+
+      {{ if .ErrorList.Errors }}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-danger" role="alert">
+                    <ul>
+                {{range $k, $v := .ErrorList.Errors}}
+                    <li><strong>
+                      {{ if $v.FriendlyName }}
+                        {{ $v.FriendlyName }} =&gt; 
+                      {{ end }}
+                      {{ $v.InstanceName }}</strong>:  
+                      ({{ $v.LastPollTime | shortDuration }}) 
+                      <span title="{{ $v.ErrorRaw }}">{{ $v.Error }}</span> </li>
+                {{end}}
+                    </ul>
+                </div>
+            </div>
+        </div>
+      {{ end }}    
+
+      {{ if .ErrorList.Warnings }}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-warning" role="alert">
+                    <ul>
+                {{range $k, $v := .ErrorList.Warnings}}
+                    <li><strong>
+                      {{ if $v.FriendlyName }}
+                        {{ $v.FriendlyName }} =&gt; 
+                      {{ end }}
+                      {{ $v.InstanceName }}</strong>:  
+                      ({{ $v.LastPollTime | shortDuration }}) 
+                      <span title="{{ $v.ErrorRaw }}">{{ $v.Error }}</span> </li>
+                {{end}}
+                    </ul>
+                </div>
+            </div>
+        </div>
+      {{ end }} 
+
+      {{ template "content" . }}
+
+    </div>
+  </body>
+</html>
+

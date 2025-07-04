@@ -1,0 +1,31 @@
+{{ define "head" }}
+
+
+{{ end }}
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Sample App Usage Report</h1>
+        </div>
+        
+    </div>
+
+
+     <div class="row">
+        <div class="col-md-12">
+            <p>This is a sample of the metrics that are reported once per day.</p>
+            <pre>{{ .RawJSON }}</pre>
+        </div>
+    </div>
+
+{{ end }}

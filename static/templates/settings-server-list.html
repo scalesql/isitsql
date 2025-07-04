@@ -1,0 +1,101 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+<ul class="nav nav-tabs menu-line-2">
+    <li class="nav-item"><a class="nav-link" href="/settings/servers">Servers</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings/credentials">Credentials</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings">Settings</a></li>
+</ul>
+{{ end }}
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+
+        $("#list").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+</script>
+
+<div class="row">
+        <div class="col-md-12">
+            <h1>Monitored SQL Servers  &nbsp; <a href="/settings/servers" title="Refresh page..."><span class="glyphicon glyphicon-refresh" aria-hidden="true" style="font-size: 60%;"></span></a></h1>
+            <p>Filter: <input type="text" id="filter" name="filter">  <strong><a href="/settings/servers/add">Add New SQL Server</a></strong></p>
+            <table class="table tablesorter" id="list" >
+                <thead>
+                    <tr>
+                        <th>Server</th>
+                        <th>FQDN</th>
+                        <th>Friendly Name</th>
+                        <th>View Stats</th>
+                        <th>Tags</th>
+                        <th>Connection</th>
+                        <th>Domain</th>
+                        <th>Server Instance</th>
+                        {{/* <th>Slug</th> */}}
+                        <th style="text-align: center;">Polled</th>
+
+                        <th>Delete</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range $k, $v := .Servers }}
+                    {{ $tagString := arrayToCSV $v.Tags}}
+          
+
+                    <tr class="{{ .CSSTableClass }}">
+                    <td><a href="/settings/servers/edit/{{ $v.Key}}">{{ $v.LinkName }}</a></td>
+                        <td>{{ $v.FQDN }}</td>
+                        <td>{{ $v.FriendlyName  }}</td>
+                        <td><a href="/server/{{ $v.Key}}">{{ $v.LinkName }}</a></td>
+                        <td>{{ $tagString }}</td>
+                        <td>{{ $v.ConnectionDescription }}</td>
+                        
+                        <td>{{ $v.Domain }}</td>
+                        <td>{{ $v.ServerName }}</td>
+                        {{/* <td><a href="{{ .URL }}">{{ .URL }}</a></td> */}}
+                        {{/* <td><a href="{{ .SlugURL }}">{{ .SlugURL }}</a></td> */}}
+                        {{/* <td>{{ $v.SlugOverride }} */}}
+                        <td style="text-align: center;" title="{{ .LastPollTime }}" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
+                        
+                        
+
+                        <!-- Delete -->
+                        <td style="text-align: center;">
+                            <a href="/settings/servers/delete/{{ $v.Key }}" title="Delete one server..."><span class="glyphicon glyphicon-trash"></span></a>
+                        </td>
+                        <td title="{{ .LastPollError }}">{{ .LastPollErrorClean }}</td>
+                    </tr>
+                {{ end }}
+
+                </tbody>
+            </table>
+        </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#list tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}

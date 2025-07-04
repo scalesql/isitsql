@@ -1,0 +1,125 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    $(function(){
+        $("#jobtable").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    $(function(){
+        $("#historytable").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+{{ if .Problems }}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <ul>
+            {{range $k, $v := .Problems}}
+                <li>{{ $v }}</li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+{{ end }} 
+
+<h1>SQL Server Agent Jobs</h1>
+<p>(Active and Failed Jobs are polled every minute)</p>
+
+<div class="row">
+    <div class="col-md-12">
+        {{/* <h2>Agent Jobs</h2> */}}
+        <h2>Currently Running</h2>
+        {{ if .RunningJobs }}
+  
+        {{ end }}
+        <table class="table table-striped" id="jobtable">
+            <thead>
+                <tr>
+                    <th>Domain</th>
+                    <th>Server</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Last Run</th>
+                    <th>Last Run <span style="color: gray;">(local time)</span></th>
+                    <th>Next Run <span style="color: gray;">(local time)</span></th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .RunningJobs}}
+                <tr class="{{if $value.CSSClass}}{{$value.CSSClass}}{{end}}" style="{{if not $value.Enabled}}color:silver;{{end}}">
+                    <td>{{ $value.DomainName }}</td>
+                    <td><a href="/server/{{ $value.Key }}/jobs/active">{{ $value.ServerName }}</a></td>
+                    <td style="white-space: nowrap; " title="{{$value.Description}}">
+                    <a href="{{$value.HistoryURL}}">{{ $value.Name }}</a>{{if not $value.Enabled}} [Disabled]{{end}}
+                    </td>
+                    <td>
+                        {{$value.ExecutionStatusDescription -}}
+                        {{- if $value.ExecutionStep }}: {{$value.ExecutionStep}}{{end}}
+                    </td>
+                    <td>{{ $value.LastRunOutcome }}</td>
+                    <td>{{ if not $value.LastRun.IsZero}}{{ $value.LastRun.Format "2006-01-02 3:04 PM" }}{{end}}</td>
+                    <td>{{ if and (not $value.NextRun.IsZero) ($value.Enabled)}}{{ $value.NextRun.Format "2006-01-02 3:04 PM" }}{{end}}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+
+        <h2>Recent Failures (last 7 days)</h2>
+        {{ if .FailedJobs }}
+            <table class="table table-striped" id="historytable">
+                <thead>
+                    <th>Time (local)</th>
+                    <th>Domain</th>
+                    <th>Server</th>
+                    <th>Job</th>
+                    <th>Result</th>
+                    <th>Dur</th>
+                    <th>Message</th>
+                </thead>
+                <tbody>
+                    {{ range $key, $v := .FailedJobs}}
+                        <tr>
+                            <td><a href="{{$v.MessagesURL}}">{{ .RunTimeNative.Format "2006-01-02 3:04 PM" }}</a></td>
+                            <td>{{ $v.DomainName }}</td>
+                            <td><a href="/server/{{ $v.Key }}/jobs/active">{{ $v.ServerName }}</a></td>
+                            <td><a href="{{$v.JobURL}}">{{ .JobName.String }}</a></td>
+                            <td>{{ .RunStatusDescription }}</td>
+                            <td>{{ .RunDurationNative }}</td>
+                            <td>{{ .Message.String }}</td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+                {{ end }}
+    </div>
+</div>
+
+{{ end }}

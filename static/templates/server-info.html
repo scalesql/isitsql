@@ -1,0 +1,103 @@
+{{ define "head" }}
+    {{/* <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script>  */}}
+{{ end }}
+
+
+
+{{ define "content" }}
+
+<div class="row">
+    <div class="col-md-12">
+        <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} </h1>
+    </div>
+</div>
+
+{{/* <div class="row">
+    <div class="col-md-12">
+        <p>
+            <strong>Version:</strong> {{ .OneServer.VersionString }} {{ .OneServer.ProductLevel }} {{ .OneServer.ProductUpdateLevel }} ({{ .OneServer.ProductVersion }})
+            <strong>Edition:</strong> {{ .OneServer.ProductEdition }}
+            <strong>Installed:</strong> {{ .OneServer.Installed.Format "2006-01-02" }}
+        </p>
+        <p>
+        
+        <strong>Cores: </strong>{{ .OneServer.CpuCount }} core{{ .OneServer.CpuCount | pluralize "s" }}; 
+        <strong>Memory:</strong> 
+                Used: {{ .OneServer.SqlServerMemoryKB | kbtostring }} /
+                {{ if .OneServer.MaxMemorySet }} Max:  {{ .OneServer.MaxMemoryKB | kbtostring }} / {{ end }}
+                Physical: {{ .OneServer.PhysicalMemoryKB | kbtostring }}
+        <strong>OS:</strong> {{ .OneServer.OSName }} ({{ .OneServer.OSArch }})         
+            
+        </p>
+       <p><strong>Addresses</strong>: {{ .OneServer.IP2CSVString }}</p>
+    </div>
+</div> */}}
+
+{{ if .Problems }}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <ul>
+            {{range $k, $v := .Problems}}
+                <li>{{ $v }}</li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {{ end }}  
+
+<div class="row">
+    <div class="col-md-6">
+        {{ range $row := .Docs }}
+            <div style="max-width: 900px;">
+                {{ $row.HTML}}
+            </div>
+        {{ end }}
+        <hr/>
+        <div style="width: fit-content; block-size: fit-content; color: darkgray;"> 
+            <ul>
+            {{ range $row := .Docs }}
+                <li>{{ $row.Path}}</li>
+            {{ end }}
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h2>Instance Properties</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .Values}}
+                <tr>
+                    <td style="white-space: nowrap; ">{{ $key }}</td>
+                    <td>{{ $value }}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+        <a href="{{ .OneServer.URL }}/conn">Connection Properties</a>
+    </div>
+</div>
+
+{{/* {{ if .Docs }}
+
+<div class="row">
+    <div class="col-md-12">
+        
+    </div>
+</div>
+{{ end }} */}}
+    
+
+{{ end }}

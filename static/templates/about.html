@@ -1,0 +1,73 @@
+{{ define "head" }}
+    <style>
+    ul.list li { padding: 5px 0px; }
+    </style>
+{{ end }}
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 60000);
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-6">
+    <h1>About</h1>
+            <p><a href="https://www.scalesql.com/isitsql/">IsItSQL</a> is a free SQL Server monitoring utility developed by <a href="https://www.scalesql.com/">scaleSQL Consulting</a> 
+        
+        <h2>Status Pages</h2>
+        <ul class="list">
+        {{ if .AppConfig.EnableProfiler }}
+            <li>An online profiler is running at <a href="http://localhost:6060/debug/pprof/">http://localhost:6060/debug/pprof</a>. 
+            This can be enabled or disabled by setting <code>enableProfiler</code> to <code>true</code> or <code>false</code> in <code>./config/settings.json</code> while the service is stopped.
+        {{ end }}
+
+        {{ if .AppConfig.EnableStatsviz }}
+            <li>Runtime metrics can be monitored at <a href="http://localhost:8092/debug/statsviz/">http://localhost:8092/debug/statsviz/</a>. 
+            This can be enabled or disabled by setting <code>enableStatsviz</code> to <code>true</code> or <code>false</code> in <code>./config/settings.json</code> while the service is stopped.
+        {{ end }}
+
+        <li>A detailed status page is available at <a href="/info">/info</a></li>
+
+        <li><a href="/polling">Polling Status Page</a> shows what is currently polling
+        and how long it is taking</li>
+
+        <li><a href="/connections">Connection Status Page</a> shows current outbound connections to all the servers</li>
+
+        <li>A <a href="https://prometheus.io/">Prometheus</a> metrics page is available at <a href="/metrics/isitsql">/metrics/isitsql</a>.
+            This lists metrics for the GO runtime.</li>
+        </ul>
+
+        <h2>API Pages</h2>
+        <ul class="list">
+            <li><a href="/versions/csv">SQL Server Versions</a> (CSV for Excel)</li>
+            <li><a href="/snapshots/json">Database Snapshots</a> (JSON)</li>
+            <li><a href="/ag/json">Availability Group Status</a> (JSON)</li>
+            <li><a href="/backups/json">Missing Backups</a> (JSON)</li>
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <h2>Application Properties</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{range $key, $value := .Values}}
+                <tr>
+                    <td style="white-space: nowrap; ">{{ $key }}</td>
+                    <td>{{ $value }}</td>
+                </tr>
+            {{end}}
+
+            </tbody>
+        </table>
+    </div>
+</div>
+{{ end }}

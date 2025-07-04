@@ -1,0 +1,95 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "content" }}
+
+
+{{/* <script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 10000);
+    }
+</script> */}}
+
+<script type="text/javascript">
+    $(function(){
+        $("#tableList").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1 title="{{ .Database.Name}} - {{.OneServer.ServerName }}">{{ .Database.Name }} ({{ .OneServer.DisplayName }})</h1>
+            {{ if .OneServer.BackupMessage }}
+            <div class="alert alert-warning">
+                <p >{{ .OneServer.BackupMessage }}</p>
+            </div>
+            {{ end }}
+        </div>       
+    </div>
+
+    {{ $key := .OneServer.MapKey }}
+
+    <div class="row">
+        
+        <div class="col-md-12">
+
+        <p>Filter: <input type="text" id="filter" name="filter"> </p> 
+
+        <table class="table tablesorter" id="tableList">
+        <thead>
+            <tr>
+                <th>Table</th>
+                <th style="text-align: right;">Rows</th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Reserved
+                </th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Data
+                </th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Indexes
+                </th>
+                <th style="text-align: right;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                    Unused
+                </th>
+                
+            </tr>
+        </thead>
+
+        <tbody>
+        {{ range .Tables }}
+            <tr>
+                <td>{{ .Schema}}.{{.Name}}</td>
+                <td style="text-align: right;">{{ .Rows | comma }}
+                <td style="text-align: right;">{{ .Reserved | kbtostring }}
+                <td style="text-align: right;">{{ .Data | kbtostring }}
+                <td style="text-align: right;">{{ .Index | kbtostring }}
+                <td style="text-align: right;">{{ .Unused | kbtostring }}
+            </tr>
+        {{ end }}
+        </tbody>
+        </table>
+        </div>      
+    </div>
+
+    <script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#tableList tbody tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>  
+
+{{ end }}

@@ -1,0 +1,119 @@
+{{ define "head" }}
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+    <script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+    <script type='text/javascript' src='/static/js/parser-metric.js'></script>
+    <script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+{{ end }}
+
+
+{{ define "menu-line-2" }}
+<ul class="nav nav-tabs menu-line-2">
+    <li class="nav-item"><a class="nav-link" href="/settings/servers">Servers</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings/credentials">Credentials</a></li>
+    <li class="nav-item"><a class="nav-link" href="/settings">Settings</a></li>
+</ul>
+{{ end }}
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+
+        $("#list").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+
+</script>
+
+{{ if .Messages }}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="warning">
+                <ul>
+            {{range $k, $v := .Messages}}
+                <li><strong>{{ $v }} </strong></li>
+            {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+{{ end }}  
+
+<div class="row">
+        <div class="col-md-12">
+            <h2>File-Based Connections  &nbsp; <a href="/settings/conns" title="Refresh page..."><span class="glyphicon glyphicon-refresh" aria-hidden="true" style="font-size: 60%;"></span></a></h2>
+            <p>Filter: <input type="text" id="filter" name="filter"></p>
+            <table class="table tablesorter" id="list" >
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Server</th>
+                        <th>Display Name</th>
+                        <th>Tags</th>
+                        <th>Credential</th>
+                        <th>Backups</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ $m := .Maps }}
+                    {{ range $k, $v := $m.Connections }}
+                        <tr>
+                        <td>{{ $k }}</td>
+                        <td>{{ $v.Server }}</td>
+                        <td>{{ $v.DisplayName }}</td>
+                        <td>{{ arrayToCSV $v.Tags }}</td>
+                        <td>{{ $v.CredentialName}}</td>
+                        <td>{{ $v.BackupDescription }}</td>
+                        </tr>
+                    {{ end }}
+
+                </tbody>
+            </table>
+
+            <h2>Availability Group Names</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Name</th>
+                        <th>Display Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ $m := .Maps }}
+                    {{ range $k, $v := $m.AGs }}
+                        <tr>
+                        <td>{{ $k.Domain }}</td>
+                        <td>{{ $k.Name }}</td>
+                        <td>{{ $v }}</td>
+                        </tr>
+                    {{ end }}
+
+                </tbody>
+            </table>
+            <h2>Files</h2>
+            <ul>
+                {{ range $s := $m.Files }}
+                    <li>{{ $s }}</li>
+                {{end }}
+            </ul>
+        </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#list tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}

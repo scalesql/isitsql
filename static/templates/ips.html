@@ -1,0 +1,102 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+<h1>SQL Server IP Addresses</h1>
+<p>Filter: <input type="text" id="filter" name="filter">   
+    {{/* <a  href="/versions/csv">Download as CSV</a> */}}
+<p>
+
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>FQDN</th>
+            <th>Domain</th>
+            <th>Server Name</th>
+            <th>IP Addresses</th>
+            {{/* <th class="sorter-metric" data-sortInitialOrder="desc">Version</th>
+            <th style="text-align:center;">Level</th>
+            <th style="text-align:center;">Update</th>
+            <th style="text-align:center;">Build</th>
+            <th>Edition</th>
+            <th>OS</th> */}}
+            {{/* <th style="text-align:center;">Installed</th> */}}
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range .Servers}}
+        <tr class="{{ .GetTableCssClass }}" role="alert">
+            <td><a href="{{ .URL }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .DisplayName }}</a></td>
+            <td>{{ .FQDN }}</td>
+            <td>{{ .Domain }}</td>
+            <td>{{ .ServerName }}</td>
+            <td>{{ .IP2CSVString }}</td>
+            {{/* <td>{{ .VersionString }}</td> 
+            <td style="text-align:center;">{{ .ProductLevel }}</td>
+            <td style="text-align:center;">{{ .ProductUpdateLevel }}</td>
+            <td  style="text-align:center;" data-text="{{ .ProductVersion | versiontostring }}">{{ .ProductVersion }}</td> }}
+            <td>{{ .ProductEdition }}</td>
+            <td>{{ .OSName }} </td> */}}
+            {{/* <td style="text-align:center; white-space: nowrap" title="{{ .Installed }}">{{ if .Installed.IsZero }}{{else}}{{ .Installed.Format "2006-01-02" }}{{end}}</td> */}}
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Servers }}
+
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+<div class="row">
+    <div class="col-md-12 " >
+        <p>This is a best effort to find IP addresses and ports using <code>sys.dm_tcp_listener_states</code> and <code>sys.dm_exec_connections</code>.
+        If the port is 1433, it isn't displayed.</p>
+    </div>
+<div>
+
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#serverlist tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>     
+
+
+{{ end }}
+

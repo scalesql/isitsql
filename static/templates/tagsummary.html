@@ -1,0 +1,131 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 10000);
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Tag</th>
+            <th style="text-align: center;">Instances</th>
+
+            <!--<th style="text-align: right;">PLE</th>-->
+            <!--<th style="text-align: right;">Disk IO Struct</th>-->
+            <th style="text-align: center;" data-sortInitialOrder="desc">Disk Read Activity</th>
+            <th style="text-align: center;" data-sortInitialOrder="desc">Disk Write Activity</th>
+            <th style="text-align: right;" data-sortInitialOrder="desc">SQL/sec</th>
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Memory</th>
+            <th style="text-align: center;" data-sortInitialOrder="desc">Databases</th>
+            
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                Data 
+            </th>
+            <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                Log
+            </th>
+            <th style="text-align: center;" data-sortInitialOrder="desc">Cores</th>
+ 
+        </tr>
+    </thead>
+
+    <tbody>
+        {{range $key, $value := .Tags}}
+        <tr role="alert">
+            <td><a href="/tag/{{ $key }}">{{ $key }}</a></td>
+            <td style="text-align: center;">{{ $value.Count | comma}}</td> 
+            
+            <td style="text-align: center;" >
+                {{ $value.DiskIO.ReadBytes | bytes }}/sec; 
+                <span style="color:darkgray;">
+                    {{ $value.DiskIO.Reads | comma }} iops
+                </span>
+            </td>
+            <td style="text-align: center;" >
+                {{ $value.DiskIO.WriteBytes | bytes }}/sec; 
+                <span style="color:darkgray;">
+                    {{ $value.DiskIO.Writes | comma }} iops
+                </span>
+            </td>
+
+            <td style="text-align: right;">{{ $value.SQLPerSecond | comma }} </td>
+            <td style="text-align: center;"><span style="color:darkgray;">{{ $value.SQLServerMemoryKB | kbtostring }} /</span> {{ $value.PhysicalMemoryKB | kbtostring }}</td>
+            <td style="text-align: center;">{{ $value.Databases | commaint }} </td>
+            <td style="text-align: center;"> {{ $value.DataSizeKB | kbtostring }}</td>
+            <td style="text-align: center;"> {{ $value.LogSizeKB | kbtostring }}</td>
+            <td title="SQL Cores Used: {{ printf "%.2f" .CoresUsedSQL }}; Other Cores Used: {{ printf "%.2f" .CoresUsedOther }}" style="text-align: center;">{{ .CPUCount }} core{{ .CPUCount | pluralize "s" }}</td>
+                       
+
+        </tr>
+        {{end}}
+    </tbody>
+
+
+    {{ if  gt .TotalLine.Count 1 }}    
+    <tfoot>
+        <tr>
+            <td  style="color:darkgray;" colspan="2">({{ .TotalLine.Count | comma }} unique instances)</td>
+            
+            <td style="text-align: center;" >
+                {{ .TotalLine.DiskIO.ReadBytes | bytes }}/sec; 
+                <span style="color:darkgray;">
+                    {{ .TotalLine.DiskIO.Reads | comma }} iops
+                </span>
+            </td>
+            <td style="text-align: center;" >
+                {{ .TotalLine.DiskIO.WriteBytes | bytes }}/sec; 
+                <span style="color:darkgray;">
+                    {{ .TotalLine.DiskIO.Writes | comma }} iops
+                </span>
+            </td>
+            <td style="text-align: right;">{{ .TotalLine.SQLPerSecond | comma }} </td>
+            <td style="text-align: center;"> {{ .TotalLine.SQLServerMemoryKB | kbtostring }}</td>
+            <td style="text-align: center;"> {{ .TotalLine.DataSizeKB | kbtostring }}</td>
+            <td style="text-align: center;"> {{ .TotalLine.LogSizeKB | kbtostring }}</td>
+            <td colspan="4"></td>
+        </tr>
+    </tfoot>
+    {{ end }}
+
+    
+</table>
+
+{{ if not .Tags }}
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            <p class="lead" style="margin-top: 30pt;" >There doesn't seem to be anything to show here.</p>
+            <p class="lead" style="margin-top: 30pt;" >Either we haven't finished the first poll or setup up any tags yet.</p>
+        </div>
+    <div>
+{{ end }}
+
+
+{{ end }}
+

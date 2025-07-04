@@ -1,0 +1,171 @@
+{{ define "head" }}
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+<script type='text/javascript' src='/static/js/parser-metric.js'></script>
+<script type='text/javascript' src='/static/js/parser-duration.js'></script> 
+
+{{ end }} 
+
+
+
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    window.onload=function() {
+        setInterval(function() {window.location.reload();}, 30000);
+    }
+
+</script>
+
+<script type="text/javascript">
+
+    $(function(){
+        $("#serverlist").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+
+    });
+
+</script>
+
+{{ if gt (len .Servers) 12}}<p>Filter: <input type="text" id="filter" name="filter"></p>{{ end }}
+<table class="table tablesorter table-striped" id="serverlist">
+    <thead>
+        <tr>
+            <th>Instance</th>
+            <th>Host</th>
+
+            <th style="text-align: center;" data-sortInitialOrder="desc">CPU</th>
+            
+            <!--<th style="text-align: right;">PLE</th>-->
+            <!--<th style="text-align: right;">Disk IO Struct</th>-->
+            <th style="text-align: center;" data-sortInitialOrder="desc">Disk Reads</th>
+            <th style="text-align: center;" data-sortInitialOrder="desc">Disk Writes</th>
+            <th style="text-align: right;" data-sortInitialOrder="desc">SQL/sec</th>
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Memory</th>
+            
+            <th style="text-align: center;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                Data 
+            </th>
+            <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">
+                Log
+            </th>
+            <th style="text-align: center;" data-sortInitialOrder="desc">Cores</th>
+            <th style="text-align: center;" class="sorter-duration">Up</th>
+            <!--<th>Version</th>-->
+            <th style="text-align: center;">Last Poll</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    {{ if  gt .TotalLine.Count 1 }}    
+    <tfoot>
+        <tr>
+            <td  style="color:darkgray;" colspan="3">({{ .TotalLine.Count | comma }} unique instances)</td>
+            
+            <td style="text-align: center;" >
+                {{ .TotalLine.DiskIO.ReadBytes | bytes }}/sec; 
+                <span style="color:darkgray;">
+                    {{ .TotalLine.DiskIO.Reads | comma }} iops
+                </span>
+            </td>
+            <td style="text-align: center;" title="{{ .TotalLine.DiskIO.WriteBytes | bytes }}; {{ .TotalLine.DiskIO.Writes | comma }}  iops">
+                {{ .TotalLine.DiskIO.WriteBytes | bytes }}/sec 
+                {{/* <span style="color:darkgray;">
+                    {{ .TotalLine.DiskIO.Writes | comma }} iops
+                </span> */}}
+            </td>
+            <td style="text-align: center;">{{ .TotalLine.SQLPerSecond | comma }} </td>
+            <td style="text-align: center;"> 
+                {{ .TotalLine.SQLServerMemoryKB | kbtostring }} <span style="color:darkgray;">/ Physical: {{ .TotalLine.PhysicalMemoryKB | kbtostring }}</span>
+            </td>
+            <td style="text-align: center;">{{ .TotalLine.DataSizeKB | kbtostring }}</td>
+            <td style="text-align: center;">{{ .TotalLine.LogSizeKB | kbtostring }}</td>
+            <td title='SQL Cores Used: {{ printf "%.2f" .TotalLine.CoresUsedSQL }}; Other Cores Used: {{ printf "%.2f" .TotalLine.CoresUsedOther }}' style="text-align: center;">{{ .TotalLine.CPUCount }}</td>
+            <td colspan="4"></td>
+        </tr>
+    </tfoot>
+    {{ end }}
+
+    <tbody>
+        {{range .Servers}}
+        <tr class="{{ .GetTableCssClass }}" role="alert">
+
+            <td><a href="{{ .URL }}" title="{{ .ServerName }} ({{ .Domain }})">{{ .DisplayName }}</a></td>
+            <td><span style="color:darkgray;">{{ if  ne .DisplayName .ServerName }}{{ .ServerName }}{{ end }}</span></td>
+            
+            <td title='SQL Cores Used: {{ printf "%.2f" .CoresUsedSQL }}; Other Cores Used: {{ printf "%.2f" .CoresUsedOther }}' style="text-align: center; background: linear-gradient(to right, #66ccff 0%, #cceeff {{ .LastCpu }}%, #ffffff {{ .LastCpu }}%);">{{ .LastCpu }}%</td>
+
+            {{ $seconds := divide .DiskIODelta.SampleMS 1000 }}
+            
+            {{ $readVolume := divide .DiskIODelta.ReadBytes $seconds }}
+            {{ $readLatency := divide .DiskIODelta.ReadStall .DiskIODelta.Reads }}
+            
+            {{ $avgRead := divide .DiskIODelta.ReadBytes .DiskIODelta.Reads}}
+            {{ $avgWrite := divide .DiskIODelta.WriteBytes .DiskIODelta.Writes}}
+
+            {{ $writeVolume := divide .DiskIODelta.WriteBytes $seconds }}
+            {{ $writeLatency := divide .DiskIODelta.WriteStall .DiskIODelta.Writes }}
+
+            <td style="text-align: center;" data-text="{{ .DiskIODelta.ReadBytes }}">
+                {{ $readVolume | bytes }}/sec; <span style="color:darkgray;">{{ divide .DiskIODelta.Reads $seconds | comma }} iops;  {{ $readLatency }}ms</span> 
+            </td>
+
+            <td style="text-align: center;" data-text="{{ .DiskIODelta.WriteBytes }}" title="{{ $writeVolume | bytes }}/sec; {{ divide .DiskIODelta.Writes $seconds | comma }} iops; {{ $writeLatency }}ms">
+                 {{ $writeVolume | bytes }}/sec  {{/*; <span style="color:darkgray;">{{ divide .DiskIODelta.Writes $seconds | comma }} iops;  {{ $writeLatency }}ms</span> */}}
+            </td>
+            
+            <td style="text-align: center;">{{ .GetLastSqlPerSecondString }}</td>
+
+            {{ $freepct := int64topct .AvailableMemoryKB .PhysicalMemoryKB }}
+            <td style="text-align: center;" title='OS: {{ .PhysicalMemoryKB | kbtostring }}; {{if .MaxMemorySet }}Max: {{ .MaxMemoryKB | kbtostring }}; {{end}}Used: {{ .SqlServerMemoryKB | kbtostring }}; Avail: {{ .AvailableMemoryKB | kbtostring }} (Avail: {{ printf "%.1f" $freepct}}%)'>
+                <span style="color:darkgray;">{{ .KBToString .SqlServerMemoryKB }} / </span>
+                {{ .KBToString .MemoryCap }}  
+                <span style="color:darkgray;">({{printf "%.1f" $freepct}}%)</span>
+            </td>
+
+            <td style="text-align: center;" title="{{ .DatabaseStateSummary }}">
+                {{ if .DataSizeKB }} {{ .KBToString .DataSizeKB }} {{ end }}
+            </td>
+            <td style="text-align: center;">
+                {{ if .LogSizeKB }} <span style="color:darkgray;">{{ .KBToString .LogSizeKB }}</span> {{ end }}
+            </td>
+            <td title='SQL Cores Used: {{ printf "%.2f" .CoresUsedSQL }}; Other Cores Used: {{ printf "%.2f" .CoresUsedOther }}' style="text-align: center;">{{ .CpuCount }}</td>
+            <td style="text-align: center;" title='Started: {{ .StartTime.Format  "Mon, 02 Jan 2006  3:04:05 PM"}} (server time zone)'>{{ .UpTimeString }}</td>
+            <!--<td title="{{ .ProductEdition }}">{{ .VersionString }} {{ .ProductLevel }} ({{ .ProductVersion }})</td>-->
+            <td style="text-align: center;" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
+            <td title="{{ .LastPollError }}">{{ .LastPollErrorClean 45 }}</td>
+            <td><a href="/settings/servers/edit/{{ .MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
+
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+{{ if not .Servers }}
+
+    <div class="row">
+        <div class="col-md-12 text-center" >
+            
+            <p class="lead" style="margin-top: 30pt;" >There aren't any servers to poll.  Let's <a href="/settings/servers/add">add a server</a>...</p>
+            <p>For future reference, click on the Settings -> Monitored Servers menu item to see a list of servers.</p>
+        </div>
+    <div>
+{{ end }}
+
+<script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#serverlist tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script>   
+
+{{ end }}
+
