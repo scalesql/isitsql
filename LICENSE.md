@@ -2,6 +2,8 @@ Elastic License 2.0
 
 URL: https://www.elastic.co/licensing/elastic-license
 
+Copyright © 2025 ScaleOut Consulting, LLC
+
 ## Acceptance
 
 By using the software, you agree to all of the terms and conditions below.
