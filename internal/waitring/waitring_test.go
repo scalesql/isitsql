@@ -15,20 +15,26 @@ func TestWaitRing(t *testing.T) {
 	assert := assert.New(t)
 	r := New(5)
 
+	last := r.Last()
+	assert.Equal(0, len(last.Waits)) // no waits yet
+
 	for i := 0; i < 16; i++ {
 		ts := time.Unix(0, 0)
 		ts = ts.Add(time.Duration(i) * time.Minute)
 		wm := WaitList{TS: ts, Waits: make(map[string]int64)}
 		r.Enqueue(wm)
 		v := r.Values()
+		last := r.Last()
 		if i <= 4 {
 			assert.Equal(i+1, len(v))              // len is the number of inserts
 			assert.Equal(time.Unix(0, 0), v[0].TS) // first entry is 0, 0
 			assert.Equal(ts, v[i].TS)              // last entry is last inserted
+			assert.Equal(ts, last.TS)              // last entry is last inserted
 		} else {
 			assert.Equal(5, len(v))                       // we always have five
 			assert.Equal(ts.Add(-4*time.Minute), v[0].TS) // first entry is four minutes ago (five total values)
 			assert.Equal(ts, v[4].TS)                     // last entry is last inserted
+			assert.Equal(ts, last.TS)                     // last entry is last inserted
 		}
 	}
 }

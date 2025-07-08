@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/scalesql/isitsql/internal/logonce"
+	"github.com/scalesql/isitsql/internal/mrepo"
 	"github.com/scalesql/isitsql/internal/mssql/agent"
 	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/sirupsen/logrus"
@@ -317,6 +318,57 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 	s.Lock()
 	s.SortPriority = thisSortPriority
 	s.Unlock()
+
+	mm := make(map[string]any)
+
+	s.RLock()
+	mm["server_key"] = s.MapKey
+	mm["server_name"] = s.ServerName
+	mm["cpu_cores"] = s.CpuCount
+	mm["cpu_sql_pct"] = s.LastSQLCPU
+	mm["cpu_other_pct"] = s.LastCpu - s.LastSQLCPU
+	metric, ok := s.Metrics["sql"]
+	if ok {
+		mm["batches_per_second"] = metric.V2.GetLastValue().ValuePerSecond
+	} else {
+		mm["batches_per_second"] = 0
+	}
+	mm["page_life_expectancy"] = s.PLE
+	mm["memory_used_mb"] = s.SqlServerMemoryKB / 1024
+	delta := s.DiskIODelta
+
+	// get the waits
+	waits := s.WaitBox.Repository().Last(s.MapKey)
+	s.RUnlock()
+
+	// set the per second values
+	seconds := delta.SampleMS / 1000
+	mm["disk_read_iops"] = delta.Reads
+	mm["disk_write_iops"] = delta.Writes
+	if seconds > 0 {
+		mm["disk_read_kb_sec"] = (delta.ReadBytes / 1024) / seconds
+		mm["disk_write_kb_sec"] = (delta.WriteBytes / 1024) / seconds
+	}
+	if delta.Reads > 0 {
+		mm["disk_read_latency_ms"] = delta.ReadBytes / delta.Reads
+	} else {
+		mm["disk_read_latency_ms"] = 0
+	}
+	if delta.Writes > 0 {
+		mm["disk_write_latency_ms"] = delta.ReadBytes / delta.Writes
+	} else {
+		mm["disk_write_latency_ms"] = 0
+	}
+
+	ts := time.Now()
+	err = mrepo.WriteMetrics(ts, mm)
+	if err != nil {
+		return true, errors.Wrap(err, "mrepo.write")
+	}
+	err = mrepo.WriteWaits(s.MapKey, s.ServerName, waits)
+	if err != nil {
+		return true, errors.Wrap(err, "mrepo.writewaits")
+	}
 
 	return true, nil
 }

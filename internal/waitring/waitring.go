@@ -146,6 +146,18 @@ func (r *Ring) Enqueue(wm WaitList) {
 	r.p += 1
 }
 
+// Last returns the most recent value in the ring buffer.
+// If the ring is empty, it returns an empty WaitList
+func (r *Ring) Last() WaitList {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.p == 0 {
+		return WaitList{TS: time.Time{}, Waits: make(map[string]int64)}
+	}
+	// the last value is at p-1
+	return r.data[(r.p-1)%len(r.data)]
+}
+
 // Values returns the values in the order they were enqueued
 func (r *Ring) Values() []WaitList {
 	r.mu.RLock()

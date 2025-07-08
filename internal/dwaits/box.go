@@ -7,11 +7,11 @@ import (
 	"hash/fnv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/scalesql/isitsql/internal/logring"
 	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/scalesql/isitsql/internal/waitring"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -243,6 +243,19 @@ func (b *Box) Messages() []logring.Event {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.messages.Newest()
+}
+
+// Repository returns a pointer to the Repository associated with the Box.
+func (b *Box) Repository() *Repository {
+	if b == nil {
+		return nil
+	}
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	if b.repo == nil {
+		return nil
+	}
+	return b.repo
 }
 
 func (b *Box) pollwaits() error {

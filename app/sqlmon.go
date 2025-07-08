@@ -19,6 +19,7 @@ import (
 	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/scalesql/isitsql/internal/fileio"
 	"github.com/scalesql/isitsql/internal/hadr"
+	"github.com/scalesql/isitsql/internal/mrepo"
 	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/sirupsen/logrus"
@@ -308,6 +309,16 @@ func setupAsync() error {
 	err = s.Save()
 	if err != nil {
 		return errors.Wrap(err, "saveconfig")
+	}
+
+	// setup the metric repository database
+	if s.Repository.Host != "" && s.Repository.Database != "" {
+		err = mrepo.Setup(s.Repository.Host, s.Repository.Database, logrus.WithContext(context.Background()))
+		if err != nil {
+			WinLogln(errors.Wrap(err, "mrepo.setup"))
+		} else {
+			WinLogf("Metric Repository: host='%s' database='%s'", s.Repository.Host, s.Repository.Database)
+		}
 	}
 
 	if getGlobalConfig().EnableProfiler {

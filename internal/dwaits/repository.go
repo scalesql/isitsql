@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/bucket"
-	"github.com/scalesql/isitsql/internal/waitring"
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/bucket"
+	"github.com/scalesql/isitsql/internal/waitring"
 	"github.com/sirupsen/logrus"
 )
 
@@ -172,6 +172,21 @@ func (r *Repository) Values(key string) []waitring.WaitList {
 		return []waitring.WaitList{}
 	}
 	return ring.Values()
+}
+
+// Last returns the most recent waits for a server key
+func (r *Repository) Last(key string) waitring.WaitList {
+	r.mu.RLock()
+	ring, ok := r.servers[key]
+	open := r.open
+	r.mu.RUnlock()
+	if !open || !ok || ring == nil {
+		return waitring.WaitList{
+			TS:    time.Time{},
+			Waits: make(map[string]int64),
+		}
+	}
+	return ring.Last()
 }
 
 // Top returns the top n waits for a particular key

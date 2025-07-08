@@ -29,7 +29,6 @@ _testmain.go
 
 
 license.txt
-servers.txt
 key*.txt
 resource.syso
 beta*.txt
@@ -38,6 +37,11 @@ beta*.txt
 panic.txt
 uselocal*.txt
 ignoredBackups.txt
+
+# configuration files
+*.toml
+*.hcl
+servers.txt
 
 # ignoring mssqlx directory for now
 /mssqlx
@@ -53,11 +57,9 @@ ignoredBackups.txt
 /servers/
 /local/
 
-
-
-# use by me 
+# used by developers
+.env 
 /working
-*.hcl
+/notes
 isitsql_panic_*.txt
 isitsql_heap_*.pb.gz
-
