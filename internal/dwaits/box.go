@@ -311,7 +311,7 @@ func (b *Box) pollwaits() error {
 		// it exists, start matches, wait matches, AND wait is higher
 		// save the request, save the incremental wait,
 		// and continue
-		if r.started == active.started { // this is the same request
+		if r.started.Equal(active.started) { // this is the same request
 			if r.wait == active.wait { // it is the same wait
 				if active.waitTimeMS > r.waitTimeMS {
 					b.mapandsavewait(active.wait, active.waitTimeMS-r.waitTimeMS)
