@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
@@ -18,8 +19,11 @@ var fs embed.FS
 
 var pool *sqlx.DB
 
+const timeout = 3 * time.Second
+
 /* TODO: If setup fails, launch a GO routine that attempts to connect every minute.
    This will need a package level mutex.
+   TODO: Only write metrics for certain tags
 */
 
 func Setup(fqdn, database string, log goose.Logger) error {

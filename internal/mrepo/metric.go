@@ -9,14 +9,14 @@ import (
 	"github.com/scalesql/isitsql/internal/waitring"
 )
 
-const timeout = 3 * time.Second
-
 // WriteMetrics writes the collected metrics to the repository.
 func WriteMetrics(ts time.Time, m map[string]any) error {
 	if pool == nil {
 		return nil
 	}
-	m["metric_time"] = ts
+	m["ts"] = ts
+	m["ts_date"] = truncateDate(ts) // truncate to date
+	m["ts_time"] = ts.Truncate(time.Minute)
 	query := insertFromMap("dbo", "server_metric", m)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -26,23 +26,32 @@ func WriteMetrics(ts time.Time, m map[string]any) error {
 }
 
 // WriteWaits writes the collected waits to the repository.
-func WriteWaits(key, name string, w waitring.WaitList) error {
+func WriteWaits(key, server, table string, w waitring.WaitList) error {
 	if pool == nil || len(w.Waits) == 0 {
 		return nil
 	}
 	rows := []map[string]any{}
 	for wait, tm := range w.Waits {
+		if tm < 1000 { // skip waits less than 1 second
+			continue
+		}
 		row := map[string]any{
-			"metric_time":  w.TS,
-			"server_key":   key,
-			"server_name":  name,
-			"wait_type":    wait,
-			"wait_time_ms": tm,
+			"ts":            w.TS,
+			"ts_date":       truncateDate(w.TS), // truncate to date
+			"ts_time":       w.TS.Truncate(time.Minute),
+			"server_key":    key,
+			"server_name":   server,
+			"wait_type":     wait,
+			"wait_time_sec": tm / 1000, // convert to seconds
 		}
 		rows = append(rows, row)
 	}
+	if len(rows) == 0 {
+		return nil // no waits to write
+	}
 
-	query := "INSERT dbo.server_wait (metric_time, server_key, server_name, wait_type, wait_time_ms) VALUES (:metric_time, :server_key, :server_name, :wait_type, :wait_time_ms)"
+	query := fmt.Sprintf(`INSERT [dbo].[%s] (ts, ts_date, ts_time, server_key, server_name, wait_type, wait_time_sec) 
+						VALUES (:ts, :ts_date, :ts_time, :server_key, :server_name, :wait_type, :wait_time_sec)`, table)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // ensure the context is cancelled
 	_, err := pool.NamedExecContext(ctx, query, rows)
@@ -62,4 +71,9 @@ func insertFromMap(schema, table string, data map[string]any) string {
 
 	query := fmt.Sprintf("INSERT INTO [%s].[%s] (%s) VALUES (%s)", schema, table, columnsStr, namedParamsStr)
 	return query
+}
+
+// truncateDate returns the date at midnight in the original time zone.
+func truncateDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }

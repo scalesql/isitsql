@@ -3,7 +3,9 @@ SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 
 CREATE TABLE [dbo].[server_metric](
-	[metric_time] [datetimeoffset](0) NOT NULL,
+	[ts] [datetimeoffset](0) NOT NULL,
+    [ts_date] [date] NOT NULL,
+	[ts_time] [time](0) NOT NULL,
 	[server_key] [nvarchar](128) NOT NULL,
     [server_name] [nvarchar](128) NOT NULL,
 	[cpu_cores] smallint NULL, 

@@ -15,6 +15,7 @@ import (
 	"github.com/scalesql/isitsql/internal/mrepo"
 	"github.com/scalesql/isitsql/internal/mssql/agent"
 	"github.com/scalesql/isitsql/internal/waitmap"
+	"github.com/scalesql/isitsql/internal/waitring"
 	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
@@ -319,6 +320,12 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 	s.SortPriority = thisSortPriority
 	s.Unlock()
 
+	s.WriteToRepository()
+	return true, nil
+}
+
+func (s *SqlServerWrapper) WriteToRepository() {
+	var err error
 	mm := make(map[string]any)
 
 	s.RLock()
@@ -337,8 +344,9 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 	mm["memory_used_mb"] = s.SqlServerMemoryKB / 1024
 	delta := s.DiskIODelta
 
-	// get the waits
-	waits := s.WaitBox.Repository().Last(s.MapKey)
+	// get the requestWaits
+	requestWaits := s.WaitBox.Repository().Last(s.MapKey) // waitring.Waitlist
+	serverWaits := s.LastWaits                            // waitmap.Waits
 	s.RUnlock()
 
 	// set the per second values
@@ -350,12 +358,12 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 		mm["disk_write_kb_sec"] = (delta.WriteBytes / 1024) / seconds
 	}
 	if delta.Reads > 0 {
-		mm["disk_read_latency_ms"] = delta.ReadBytes / delta.Reads
+		mm["disk_read_latency_ms"] = delta.ReadStall / delta.Reads //delta.ReadBytes / delta.Reads
 	} else {
 		mm["disk_read_latency_ms"] = 0
 	}
 	if delta.Writes > 0 {
-		mm["disk_write_latency_ms"] = delta.ReadBytes / delta.Writes
+		mm["disk_write_latency_ms"] = delta.WriteStall / delta.Writes
 	} else {
 		mm["disk_write_latency_ms"] = 0
 	}
@@ -363,14 +371,28 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 	ts := time.Now()
 	err = mrepo.WriteMetrics(ts, mm)
 	if err != nil {
-		return true, errors.Wrap(err, "mrepo.write")
-	}
-	err = mrepo.WriteWaits(s.MapKey, s.ServerName, waits)
-	if err != nil {
-		return true, errors.Wrap(err, "mrepo.writewaits")
+		// Log the error but don't return it
+		logrus.Error(errors.Wrap(err, "mrepo.write"))
 	}
 
-	return true, nil
+	err = mrepo.WriteWaits(s.MapKey, s.ServerName, "request_wait", requestWaits)
+	if err != nil {
+		// Log the error but don't return it
+		logrus.Error(errors.Wrap(err, "mrepo.writewaits.request"))
+	}
+
+	// Convert serverWaits to waitring.WaitList
+	// so we can write it to the repository
+	sw := waitring.WaitList{
+		TS:    serverWaits.EventTime,
+		Waits: serverWaits.WaitSummary,
+	}
+	err = mrepo.WriteWaits(s.MapKey, s.ServerName, "server_wait", sw)
+	if err != nil {
+		// Log the error but don't return it
+		logrus.Error(errors.Wrap(err, "mrepo.writewaits.server"))
+	}
+
 }
 
 func (sw *SqlServerWrapper) getIP() error {
