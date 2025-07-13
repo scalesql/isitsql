@@ -61,3 +61,4 @@ ignoredBackups.txt
 isitsql_panic_*.txt
 isitsql_heap_*.pb.gz
 
+.env
