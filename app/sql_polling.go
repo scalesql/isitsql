@@ -350,12 +350,12 @@ func (s *SqlServerWrapper) WriteToRepository() {
 	s.RUnlock()
 
 	// set the per second values
-	seconds := delta.SampleMS / 1000
-	mm["disk_read_iops"] = delta.Reads
-	mm["disk_write_iops"] = delta.Writes
+	seconds := float64(delta.SampleMS) / 1000.0
+	mm["disk_read_iops"] = int64(float64(delta.Reads) / seconds)
+	mm["disk_write_iops"] = int64(float64(delta.Writes) / seconds)
 	if seconds > 0 {
-		mm["disk_read_kb_sec"] = (delta.ReadBytes / 1024) / seconds
-		mm["disk_write_kb_sec"] = (delta.WriteBytes / 1024) / seconds
+		mm["disk_read_kb_sec"] = int64((float64(delta.ReadBytes) / 1024.0) / seconds)
+		mm["disk_write_kb_sec"] = int64((float64(delta.WriteBytes) / 1024.0) / seconds)
 	}
 	if delta.Reads > 0 {
 		mm["disk_read_latency_ms"] = delta.ReadStall / delta.Reads //delta.ReadBytes / delta.Reads
