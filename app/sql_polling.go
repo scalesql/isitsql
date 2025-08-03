@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/scalesql/isitsql/internal/logonce"
-	"github.com/scalesql/isitsql/internal/mrepo"
 	"github.com/scalesql/isitsql/internal/mssql/agent"
 	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/scalesql/isitsql/internal/waitring"
@@ -325,7 +324,6 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 }
 
 func (s *SqlServerWrapper) WriteToRepository() {
-	var err error
 	mm := make(map[string]any)
 
 	s.RLock()
@@ -369,17 +367,8 @@ func (s *SqlServerWrapper) WriteToRepository() {
 	}
 
 	ts := time.Now()
-	err = mrepo.WriteMetrics(ts, mm)
-	if err != nil {
-		// Log the error but don't return it
-		logrus.Error(errors.Wrap(err, "mrepo.write"))
-	}
-
-	err = mrepo.WriteWaits(s.MapKey, s.ServerName, "request_wait", requestWaits)
-	if err != nil {
-		// Log the error but don't return it
-		logrus.Error(errors.Wrap(err, "mrepo.writewaits.request"))
-	}
+	GlobalRepository.WriteMetrics(ts, mm)
+	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "request_wait", requestWaits)
 
 	// Convert serverWaits to waitring.WaitList
 	// so we can write it to the repository
@@ -387,12 +376,7 @@ func (s *SqlServerWrapper) WriteToRepository() {
 		TS:    serverWaits.EventTime,
 		Waits: serverWaits.WaitSummary,
 	}
-	err = mrepo.WriteWaits(s.MapKey, s.ServerName, "server_wait", sw)
-	if err != nil {
-		// Log the error but don't return it
-		logrus.Error(errors.Wrap(err, "mrepo.writewaits.server"))
-	}
-
+	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "server_wait", sw)
 }
 
 func (sw *SqlServerWrapper) getIP() error {

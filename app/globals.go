@@ -4,7 +4,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scalesql/isitsql/internal/appringlog"
 	"github.com/scalesql/isitsql/internal/dwaits"
+	"github.com/scalesql/isitsql/internal/mrepo"
 	//"github.com/scalesql/isitsql/internal/settings"
 )
 
@@ -57,7 +59,7 @@ var globalPool *Pool
 
 var servers ServerList
 
-var GLOBAL_RINGLOG RingLog
+var GLOBAL_RINGLOG appringlog.RingLog
 
 var IsInteractive = true
 
@@ -69,3 +71,6 @@ var buildDate = "undefined"
 var DynamicWaitRepository *dwaits.Repository
 
 // var buildTime = "undefined"
+
+// Yet another global.  This is painful.
+var GlobalRepository *mrepo.Repository

@@ -313,12 +313,14 @@ func setupAsync() error {
 
 	// setup the metric repository database
 	if s.Repository.Host != "" && s.Repository.Database != "" {
-		err = mrepo.Setup(s.Repository.Host, s.Repository.Database, logrus.WithContext(context.Background()))
+		repo, err := mrepo.NewRepository(s.Repository.Host, s.Repository.Database, logrus.WithContext(context.Background()), &GLOBAL_RINGLOG)
+		GlobalRepository = repo
 		if err != nil {
 			// WinLogln(errors.Wrap(err, "mrepo.setup"))
-			WinLogErr(errors.Wrap(err, "mrepo.setup"))
+			WinLogErr(errors.Wrap(err, "REPOSITORY"))
 		} else {
-			WinLogf("Metric Repository: host='%s' database='%s'", s.Repository.Host, s.Repository.Database)
+
+			WinLogf("REPOSITORY: host='%s' database='%s'", s.Repository.Host, s.Repository.Database)
 		}
 	}
 

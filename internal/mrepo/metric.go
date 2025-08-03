@@ -10,9 +10,9 @@ import (
 )
 
 // WriteMetrics writes the collected metrics to the repository.
-func WriteMetrics(ts time.Time, m map[string]any) error {
-	if pool == nil {
-		return nil
+func (r *Repository) WriteMetrics(ts time.Time, m map[string]any) {
+	if r.pool == nil {
+		return
 	}
 	m["ts"] = ts
 	m["ts_date"] = truncateDate(ts) // truncate to date
@@ -21,14 +21,14 @@ func WriteMetrics(ts time.Time, m map[string]any) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // ensure the context is cancelled
-	_, err := pool.NamedExecContext(ctx, query, m)
-	return err
+	_, err := r.pool.NamedExecContext(ctx, query, m)
+	r.handleError(err)
 }
 
 // WriteWaits writes the collected waits to the repository.
-func WriteWaits(key, server, table string, w waitring.WaitList) error {
-	if pool == nil || len(w.Waits) == 0 {
-		return nil
+func (r *Repository) WriteWaits(key, server, table string, w waitring.WaitList) {
+	if r.pool == nil || len(w.Waits) == 0 {
+		return
 	}
 	rows := []map[string]any{}
 	for wait, tm := range w.Waits {
@@ -47,15 +47,15 @@ func WriteWaits(key, server, table string, w waitring.WaitList) error {
 		rows = append(rows, row)
 	}
 	if len(rows) == 0 {
-		return nil // no waits to write
+		return // no waits to write
 	}
 
 	query := fmt.Sprintf(`INSERT [dbo].[%s] (ts, ts_date, ts_time, server_key, server_name, wait_type, wait_time_sec) 
 						VALUES (:ts, :ts_date, :ts_time, :server_key, :server_name, :wait_type, :wait_time_sec)`, table)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // ensure the context is cancelled
-	_, err := pool.NamedExecContext(ctx, query, rows)
-	return err
+	_, err := r.pool.NamedExecContext(ctx, query, rows)
+	r.handleError(err)
 }
 
 func insertFromMap(schema, table string, data map[string]any) string {

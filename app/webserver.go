@@ -22,6 +22,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/leekchan/gtf"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/appringlog"
 	"github.com/scalesql/isitsql/internal/build"
 	"github.com/scalesql/isitsql/internal/diskio"
 	"github.com/scalesql/isitsql/internal/gui"
@@ -368,7 +369,7 @@ func logPage(w http.ResponseWriter, req *http.Request) {
 		// Servers     map[string]SqlServer
 		// ErrorList   map[string]PollError
 		// HeaderRight string
-		LogEvents []RingLogEvent
+		LogEvents []appringlog.RingLogEvent
 		//TagList     map[string]tag
 	}{
 		Context: Context{
