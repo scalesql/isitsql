@@ -315,7 +315,8 @@ func setupAsync() error {
 	if s.Repository.Host != "" && s.Repository.Database != "" {
 		err = mrepo.Setup(s.Repository.Host, s.Repository.Database, logrus.WithContext(context.Background()))
 		if err != nil {
-			WinLogln(errors.Wrap(err, "mrepo.setup"))
+			// WinLogln(errors.Wrap(err, "mrepo.setup"))
+			WinLogErr(errors.Wrap(err, "mrepo.setup"))
 		} else {
 			WinLogf("Metric Repository: host='%s' database='%s'", s.Repository.Host, s.Repository.Database)
 		}

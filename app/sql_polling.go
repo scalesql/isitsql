@@ -351,9 +351,9 @@ func (s *SqlServerWrapper) WriteToRepository() {
 
 	// set the per second values
 	seconds := float64(delta.SampleMS) / 1000.0
-	mm["disk_read_iops"] = int64(float64(delta.Reads) / seconds)
-	mm["disk_write_iops"] = int64(float64(delta.Writes) / seconds)
 	if seconds > 0 {
+		mm["disk_read_iops"] = int64(float64(delta.Reads) / seconds)
+		mm["disk_write_iops"] = int64(float64(delta.Writes) / seconds)
 		mm["disk_read_kb_sec"] = int64((float64(delta.ReadBytes) / 1024.0) / seconds)
 		mm["disk_write_kb_sec"] = int64((float64(delta.WriteBytes) / 1024.0) / seconds)
 	}

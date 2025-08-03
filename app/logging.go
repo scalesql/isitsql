@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/crlf"
-	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/crlf"
+	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/sirupsen/logrus"
 )
 
@@ -74,6 +74,12 @@ func WinLogln(a ...interface{}) {
 	//log.Println(str, "\r")
 	logrus.Info(str)
 	GLOBAL_RINGLOG.Enqueue(str)
+}
+
+// WinLogf logs an error
+func WinLogErr(err error) {
+	logrus.Error(err.Error())
+	GLOBAL_RINGLOG.Enqueue("ERROR: " + err.Error())
 }
 
 // WinLogf logs a formatted line
