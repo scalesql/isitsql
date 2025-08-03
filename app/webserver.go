@@ -667,6 +667,16 @@ func getServerErrorList() PageAlerts {
 		ptr.RUnlock()
 	}
 
+	// Get the repository error
+	tm, err := GlobalRepository.RepositoryError()
+	if err != nil {
+		pa.Errors["IsItSQL: Repository:"] = PollError{
+			FriendlyName: "IsItSQL: Repository:",
+			Error:        err.Error(),
+			LastPollTime: tm,
+		}
+	}
+
 	// Get any AG errors
 	aglist := hadr.PublicAGMap.Groups()
 	for _, ag := range aglist {
@@ -695,6 +705,7 @@ func getServerErrorList() PageAlerts {
 			pa.Warnings[mapKey] = pe
 		}
 	}
+
 	return pa
 }
 

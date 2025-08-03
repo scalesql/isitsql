@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -19,8 +20,9 @@ type Repository struct {
 	pool   *sqlx.DB
 	applog *appringlog.RingLog
 
-	mu  sync.RWMutex
-	err error
+	mu       sync.RWMutex
+	err      error
+	occurred time.Time
 }
 
 // TODO: If setup fails, launch a GO routine that attempts to connect every minute.
@@ -31,8 +33,9 @@ type Repository struct {
 // NewRepository returns a new Repository
 func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingLog) (*Repository, error) {
 	r := Repository{
-		applog: rl,
-		mu:     sync.RWMutex{},
+		applog:   rl,
+		mu:       sync.RWMutex{},
+		occurred: time.Time{},
 	}
 
 	if fqdn == "" || database == "" {
@@ -50,6 +53,8 @@ func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingL
 	// this works because Open doesn't actually try to connect to the database server
 	r.pool = sqlx.NewDb(db, "sqlserver")
 	if err != nil {
+		r.occurred = time.Now()
+		r.err = err
 		return &r, err
 	}
 
@@ -57,15 +62,26 @@ func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingL
 	goose.SetBaseFS(fs)
 	err = goose.SetDialect(string(goose.DialectMSSQL))
 	if err != nil {
+		r.occurred = time.Now()
+		r.err = err
 		return &r, fmt.Errorf("goose.setdialect: %w", err)
 	}
 	goose.SetTableName("isitsql_schema_version")
 	err = goose.Up(db, "migrations")
 	if err != nil {
+		r.occurred = time.Now()
+		r.err = err
 		return &r, fmt.Errorf("goose.up: %w", err)
 	}
 
 	return &r, nil
+}
+
+// RepositoryError returns the time of the error and the last error
+func (r *Repository) RepositoryError() (time.Time, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.occurred, r.err
 }
 
 func (r *Repository) handleError(err error) {
@@ -95,6 +111,7 @@ func (r *Repository) handleError(err error) {
 		r.applog.Enqueue("REPOSITORY: Error Cleared")
 		// save the cleared error
 		r.err = nil
+		r.occurred = time.Time{}
 		return
 	}
 
@@ -102,6 +119,7 @@ func (r *Repository) handleError(err error) {
 	logrus.Error(errors.Wrap(err, "REPOSITORY"))
 	r.applog.Enqueue(fmt.Sprintf("REPOSITORY: %s", err.Error()))
 	r.err = err
+	r.occurred = time.Now()
 }
 
 func makeconnstr(server, database, user, password string) (url.URL, error) {
