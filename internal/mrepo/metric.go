@@ -26,7 +26,7 @@ func (r *Repository) WriteMetrics(ts time.Time, m map[string]any) {
 }
 
 // WriteWaits writes the collected waits to the repository.
-func (r *Repository) WriteWaits(key, server, table string, w waitring.WaitList) {
+func (r *Repository) WriteWaits(key, server, table string, start time.Time, w waitring.WaitList) {
 	if r.pool == nil || len(w.Waits) == 0 {
 		return
 	}
@@ -43,6 +43,7 @@ func (r *Repository) WriteWaits(key, server, table string, w waitring.WaitList) 
 			"server_name":   server,
 			"wait_type":     wait,
 			"wait_time_sec": tm / 1000, // convert to seconds
+			"server_start":  start,
 		}
 		rows = append(rows, row)
 	}
@@ -50,8 +51,8 @@ func (r *Repository) WriteWaits(key, server, table string, w waitring.WaitList) 
 		return // no waits to write
 	}
 
-	query := fmt.Sprintf(`INSERT [dbo].[%s] (ts, ts_date, ts_time, server_key, server_name, wait_type, wait_time_sec) 
-						VALUES (:ts, :ts_date, :ts_time, :server_key, :server_name, :wait_type, :wait_time_sec)`, table)
+	query := fmt.Sprintf(`INSERT [dbo].[%s] (ts, ts_date, ts_time, server_key, server_name, server_start, wait_type, wait_time_sec) 
+						VALUES (:ts, :ts_date, :ts_time, :server_key, :server_name, :server_start, :wait_type, :wait_time_sec)`, table)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // ensure the context is cancelled
 	_, err := r.pool.NamedExecContext(ctx, query, rows)

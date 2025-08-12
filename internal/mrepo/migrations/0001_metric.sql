@@ -8,6 +8,7 @@ CREATE TABLE [dbo].[server_metric](
 	[ts_time] [time](0) NOT NULL,
 	[server_key] [nvarchar](128) NOT NULL,
     [server_name] [nvarchar](128) NOT NULL,
+	[server_start] datetime NOT NULL,
 	[cpu_cores] smallint NULL, 
 	[cpu_sql_pct] [tinyint] NULL,
 	[cpu_other_pct] [tinyint] NULL,

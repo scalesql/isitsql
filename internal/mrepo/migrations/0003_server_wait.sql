@@ -8,6 +8,7 @@ CREATE TABLE [dbo].[server_wait](
 	[ts_time] [time](0) NOT NULL,
 	[server_key] [nvarchar](128) NOT NULL,
     [server_name] [nvarchar](128) NOT NULL,
+    [server_start] datetime NOT NULL,
     [wait_type] NVARCHAR(128) NOT NULL,
     [wait_time_sec] BIGINT NOT NULL,
 ) ON [PRIMARY];

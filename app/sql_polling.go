@@ -327,8 +327,10 @@ func (s *SqlServerWrapper) WriteToRepository() {
 	mm := make(map[string]any)
 
 	s.RLock()
+	startTime := s.StartTime
 	mm["server_key"] = s.MapKey
 	mm["server_name"] = s.ServerName
+	mm["server_start"] = startTime
 	mm["cpu_cores"] = s.CpuCount
 	mm["cpu_sql_pct"] = s.LastSQLCPU
 	mm["cpu_other_pct"] = s.LastCpu - s.LastSQLCPU
@@ -368,7 +370,7 @@ func (s *SqlServerWrapper) WriteToRepository() {
 
 	ts := time.Now()
 	GlobalRepository.WriteMetrics(ts, mm)
-	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "request_wait", requestWaits)
+	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "request_wait", startTime, requestWaits)
 
 	// Convert serverWaits to waitring.WaitList
 	// so we can write it to the repository
@@ -376,7 +378,7 @@ func (s *SqlServerWrapper) WriteToRepository() {
 		TS:    serverWaits.EventTime,
 		Waits: serverWaits.WaitSummary,
 	}
-	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "server_wait", sw)
+	GlobalRepository.WriteWaits(s.MapKey, s.ServerName, "server_wait", startTime, sw)
 }
 
 func (sw *SqlServerWrapper) getIP() error {
