@@ -10,11 +10,9 @@ import (
 	"sync"
 
 	"github.com/billgraziano/dpapi"
-	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	"github.com/scalesql/isitsql/internal/c2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,15 +52,6 @@ type AppConfig struct {
 	Debug                 bool               `json:"log_debug"`
 	Trace                 bool               `json:"log_trace"`
 	PProfLogMB            int                `json:"pprof_log_mb"`
-	Repository            struct {
-		Host     string `hcl:"host"`
-		Database string `hcl:"database"`
-	} `hcl:"repository,block"`
-
-	// Dynamic settings
-	// IsEnterprise   bool
-	// UseLocalStatic bool
-	// IsBeta         bool ``
 }
 
 // Save writes the configuration settings
@@ -153,11 +142,6 @@ func ReadConfig() (AppConfig, error) {
 		return a, errors.Wrap(err, "validateconfig")
 	}
 
-	err = readIsItSQLHCL(&a)
-	if err != nil {
-		logrus.Error(errors.Wrap(err, "readisitsqlhcl"))
-	}
-
 	// if sessionKey is empty -- generate it, encrypt it and save it
 	if a.SessionKey == "" {
 		logrus.Debug("generating session key...")
@@ -174,34 +158,6 @@ func ReadConfig() (AppConfig, error) {
 	os.Setenv("ISITSQL_SESSION_KEY", a.SessionKey)
 
 	return a, nil
-}
-
-func readIsItSQLHCL(cfg *AppConfig) error {
-	wd, err := osext.ExecutableFolder()
-	if err != nil {
-		return errors.Wrap(err, "executableFolder")
-	}
-
-	fileName := filepath.Join(wd, "isitsql.hcl")
-
-	// if the file doesn't exist, then we are done
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		return nil // no config file, so nothing to do
-	}
-
-	// Read the file
-	fileBody, err := c2.ReadFile(fileName)
-	if err != nil {
-		return errors.Wrap(err, "readfile")
-	}
-
-	// decode into the passed config pointer
-	err = hclsimple.Decode(fileName, fileBody, nil, cfg)
-	if err != nil {
-		return errors.Wrap(err, "hclsimple.decode")
-	}
-
-	return nil
 }
 
 func newEncryptedSessionKey() (string, error) {

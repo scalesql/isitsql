@@ -11,6 +11,9 @@ import (
 
 // WriteMetrics writes the collected metrics to the repository.
 func (r *Repository) WriteMetrics(ts time.Time, m map[string]any) {
+	if r == nil {
+		return
+	}
 	if r.pool == nil {
 		return
 	}
@@ -27,6 +30,9 @@ func (r *Repository) WriteMetrics(ts time.Time, m map[string]any) {
 
 // WriteWaits writes the collected waits to the repository.
 func (r *Repository) WriteWaits(key, server, table string, start time.Time, w waitring.WaitList) {
+	if r == nil {
+		return
+	}
 	if r.pool == nil || len(w.Waits) == 0 {
 		return
 	}

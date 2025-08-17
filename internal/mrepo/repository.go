@@ -31,7 +31,7 @@ type Repository struct {
 // TODO: Only write metrics for certain tags
 
 // NewRepository returns a new Repository
-func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingLog) (*Repository, error) {
+func NewRepository(fqdn, database, user, pwd string, log goose.Logger, rl *appringlog.RingLog) (*Repository, error) {
 	r := Repository{
 		applog:   rl,
 		mu:       sync.RWMutex{},
@@ -43,10 +43,11 @@ func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingL
 	}
 
 	// connect to the database and set the package level connection
-	connstr, err := makeconnstr(fqdn, database, "", "")
+	connstr, err := makeconnstr(fqdn, database, user, pwd)
 	if err != nil {
 		return &r, fmt.Errorf("connstr: %w", err)
 	}
+
 	db, err := sql.Open("sqlserver", connstr.String())
 	// save the connection pool as a sqlx pool
 	// even if we get an error, we will try
@@ -79,32 +80,50 @@ func NewRepository(fqdn, database string, log goose.Logger, rl *appringlog.RingL
 
 // RepositoryError returns the time of the error and the last error
 func (r *Repository) RepositoryError() (time.Time, error) {
+	if r == nil {
+		return time.Time{}, nil
+	}
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.occurred, r.err
 }
 
 func (r *Repository) handleError(err error) {
+	if r == nil {
+		return
+	}
 	// Start with a read lock and the happy path
 	r.mu.RLock()
 	rerr := r.err
 	r.mu.RUnlock()
-	if rerr == err { // both nil or both the same error
+	if rerr == nil && err == nil { // both are nil
 		return
 	}
+	if rerr != nil && err != nil { // two errors
+		if rerr.Error() == err.Error() { // both are the same error
+			return
+		}
+	}
+	// one is nil and one is not or they are different :(
 
 	// the state has changed, we think...
+	// take a write lock to see
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	rerr = r.err
 
 	// let's try the happy path again.  Maybe some other write
 	// already took care of this for us
-	if rerr == err { // both nil or both the same error
+	if rerr == nil && err == nil { // both are nil
 		return
 	}
+	if rerr != nil && err != nil {
+		if rerr.Error() == err.Error() { // both are the same error
+			return
+		}
+	}
 
-	// we just cleared an error
+	// we know they are different, so did we just clear an error?
 	if err == nil { // since they aren't equal, we are clearing
 		// log the clearance
 		logrus.Info("REPOSITORY: Error Cleared")
