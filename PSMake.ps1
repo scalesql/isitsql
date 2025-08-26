@@ -92,6 +92,7 @@ Copy-Item -Path ".\LICENSE.md"   -Destination "$target\LICENSE.md"
 blackfriday-tool -css .\static\docs\style.css -embed .\static\docs\README.md        ".\deploy\isitsql\README.html"
 blackfriday-tool -css .\static\docs\style.css -embed .\static\docs\FileConfig.md    ".\deploy\isitsql\optional\FileConfig.html"
 blackfriday-tool -css .\static\docs\style.css -embed .\static\docs\ConnTest.md      ".\deploy\isitsql\optional\ConnTest.html"
+blackfriday-tool -css .\static\docs\style.css -embed .\assets\docs\Advanced.md      ".\deploy\isitsql\optional\Advanced.html"
 
 Write-Host "Writing Zip Files..."
 # Standard Zip file

@@ -29,22 +29,25 @@ _Note:_ If you enter a server using either a SQL Server login or custom connecti
 8.  [Feedback and Known Issues](#feedback)
 9.  [Extended Events](#xe)
 10. [Server Documentation](#docs)
+11. [Store Metrics in a SQL Server Database](#repository)
 11. [Previous Releases](#previous)
 
 <a id="whatsnew"></a>
 
 ## What's New
 
-### vNext 
+### 2.5 (August 2025) 
+* Option to store key server metrics in a SQL Server Database
+* Support protocols for connections such as "tcp:fqdn.com".  It supports "tcp", "np" (named pipes), and "lpc" (shared memory).  The default is "tcp".  The Server Information page has a link to the Server Connection page that will show the connection details.
 * Upgraded jQuery and Bootstrap.  This no longer supports Internet Explorer.
 * Ignore distributed Availability Groups for now
-* Support protocols for connections such as "tcp:fqdn.com".  It supports "tcp", "np" (named pipes), and "lpc" (shared memory).  The default is "tcp".  The Server Information page has a link to the Server Connection page that will show the connection details.
 * Added an Outbound Connections page at `/connections` that shows the FQDN, @@SERVERNAME, protocol, and authorization scheme for all the SQL Server connections.
 * Improved Javascript error handling
+* Cleaned up nesting in the HTML templates
 
 ### 2.3 (January 2025)
 * Added SQL Server Agent jobs.  The IsItSQL service account needs `db_datareader` and `SQLAgentReaderRole` in `msdb`.
-* Added Prometheus metrics.  See the About page for a link.
+* Added Prometheus metrics.  See the About page for the link.
 * Reduced locking
 * Fixed issue with charts always in UTC
 * Updated GO version and all dependencies
@@ -311,6 +314,30 @@ Each server page looks for an Extended Event session named "ErrorSession". It ex
 
     IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
       ALTER EVENT SESSION ErrorSession ON SERVER STATE = START
+
+<a id="repository"></a>
+
+## Store Server Metrics in a SQL Server Database
+As of version 2.5, IsItSQL can store key metrics in a SQL Server database.  These are stored in three tables:
+* `server_metric` - stores basic metrics such as cpu usage, cores, memory, disk usage, etc.
+* `request_wait` - stores the dynamic waits
+* `server_wait` - stores the server level waits
+
+This is configured using a TOML file named `isitsql.toml` in the same folder as the executable.  The format is:
+
+```toml
+[repository]
+host = "D40\\SQL2016"
+database = "IsItSQL"
+# credential = "isitsql"
+```
+
+* Any backslash needs to be escaped
+* It uses trusted authentication unless a credential name is specified
+* The database must already exist
+* The service account (or credential) must have the `db_owner` role in the database to create the objects and write data
+* IsItSQL will create the needed tables at startup
+* The Repository database server must be SQL Server 2016 or higher
 
 <a id="docs"></a>
 

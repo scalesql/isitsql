@@ -21,7 +21,22 @@ This is designed to allow a moderately technical person to determine if SQL Serv
 * Show Database Mirroring status
 * Download all SQL Servers to CSV showing version, edition, etc.
 
-
-
 Please see the [Documentation](static/docs/README.md) for more details.
 
+## What's New
+
+### 2.5 (August 2025) 
+* Option to store key server metrics in a SQL Server Database
+* Support protocols for connections such as "tcp:fqdn.com".  It supports "tcp", "np" (named pipes), and "lpc" (shared memory).  The default is "tcp".  The Server Information page has a link to the Server Connection page that will show the connection details.
+* Upgraded jQuery and Bootstrap.  This no longer supports Internet Explorer.
+* Ignore distributed Availability Groups for now
+* Added an Outbound Connections page at `/connections` that shows the FQDN, @@SERVERNAME, protocol, and authorization scheme for all the SQL Server connections.
+* Improved Javascript error handling
+* Cleaned up nesting in the HTML templates
+
+### 2.3 (January 2025)
+* Added SQL Server Agent jobs.  The IsItSQL service account needs `db_datareader` and `SQLAgentReaderRole` in `msdb`.
+* Added Prometheus metrics.  See the About page for the link.
+* Reduced locking
+* Fixed issue with charts always in UTC
+* Updated GO version and all dependencies
