@@ -8,11 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/scalesql/isitsql/internal/mssql"
 	"github.com/billgraziano/mssqlh/v2"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/mssql"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 var ErrNoDocsFolder = errors.New("docs folder not found")
@@ -123,8 +126,30 @@ func getDoc(name string) (Document, bool, error) {
 	if err != nil {
 		return Document{}, false, errors.Wrap(err, "os.readfile")
 	}
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			extension.TaskList,
+			extension.DefinitionList,
+			extension.Footnote,
+			extension.Typographer,
+			extension.Linkify,
+			extension.Strikethrough,
+			extension.CJK,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithXHTML(),
+		),
+	)
+
 	var buf bytes.Buffer
-	err = goldmark.Convert(body, &buf)
+	err = md.Convert(body, &buf)
+
 	if err != nil {
 		return Document{}, true, errors.Wrap(err, "goldmark.convert")
 	}
