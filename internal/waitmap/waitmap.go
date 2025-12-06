@@ -516,4 +516,5 @@ func (wm *WaitMapping) SetBaseWaitMapping() {
 	wm.Mappings["XE_TIMER_EVENT"] = WaitMap{MappedTo: "XE", Excluded: true}
 	wm.Mappings["XE_TIMER_MUTEX"] = WaitMap{MappedTo: "XE", Excluded: false}
 	wm.Mappings["XE_FILE_TARGET_TVF"] = WaitMap{MappedTo: "XE", Excluded: true}
+	wm.Mappings["XE_LIVE_TARGET_TVF"] = WaitMap{MappedTo: "XE", Excluded: true}
 }
