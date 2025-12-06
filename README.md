@@ -25,6 +25,9 @@ Please see the [Documentation](static/docs/README.md) for more details.
 
 ## What's New
 
+### vNext 
+* Improve MarkDown formatting in the server information page
+
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database
 * Support protocols for connections such as "tcp:fqdn.com".  It supports "tcp", "np" (named pipes), and "lpc" (shared memory).  The default is "tcp".  The Server Information page has a link to the Server Connection page that will show the connection details.

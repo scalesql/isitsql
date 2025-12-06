@@ -53,11 +53,13 @@
 
 <div class="row">
     <div class="col-md-6">
-        {{ range $row := .Docs }}
-            <div style="max-width: 900px;">
-                {{ $row.HTML}}
-            </div>
-        {{ end }}
+        <div id="markdown-content">
+            {{ range $row := .Docs }}
+                <div style="max-width: 900px;">
+                    {{ $row.HTML}}
+                </div>
+            {{ end }}
+        </div>
         <hr/>
         <div style="width: fit-content; block-size: fit-content; color: darkgray;"> 
             <ul>
@@ -90,6 +92,12 @@
         <a href="{{ .OneServer.URL }}/conn">Connection Properties</a>
     </div>
 </div>
+
+<script>
+document.querySelectorAll("#markdown-content table").forEach(t => {
+  t.classList.add("table", "table-striped", "table-bordered", "table-sm");
+});
+</script>
 
 {{/* {{ if .Docs }}
 
