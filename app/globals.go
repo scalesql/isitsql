@@ -53,10 +53,6 @@ func init() {
 	//globalSlugMap.m = make(map[string]string)
 }
 
-var globalPool *Pool
-
-// var WAIT_MAPPINGS WaitMapping
-
 var servers ServerList
 
 var GLOBAL_RINGLOG appringlog.RingLog

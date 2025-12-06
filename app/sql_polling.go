@@ -35,14 +35,6 @@ func (s *ServerList) PollServers() {
 	if err != nil {
 		WinLogln("Error reading wait mappings: ", err)
 	}
-
-	s.RLock()
-	topoll := s.SortedKeys
-	s.RUnlock()
-
-	for _, key := range topoll {
-		globalPool.Poll(key)
-	}
 }
 
 // getAllMetrics polls a SQL Server and updates metrics.  It returns a flag

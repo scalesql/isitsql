@@ -350,10 +350,6 @@ func setupAsync() error {
 	// 	return errors.Wrap(err, "globalwaitsbucket.start")
 	// }
 
-	// Configure the polling pool (I'm not sure this is really used)
-	// I think everything polls in it's own GO routine
-	globalPool = NewPool(s.PollWorkers)
-
 	setUseLocalStatic()
 
 	servers.Servers = make(map[string]*SqlServerWrapper)

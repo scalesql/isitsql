@@ -18,7 +18,6 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/dwaits"
-	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/scalesql/isitsql/internal/settings"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
@@ -355,12 +354,6 @@ func (list *ServerList) UpdateFromSettings(key string, c settings.SQLServer) err
 		s.SetConectionString(key, c)
 		list.SortKeys()
 		list.mapTags()
-
-		// Launch a poll in the background
-		go func(keyToPoll string) {
-			defer failure.HandlePanic()
-			globalPool.Poll(keyToPoll)
-		}(key)
 
 		WinLogln(fmt.Sprintf("Updating: %s (%s)", s.DisplayName(), key))
 	}

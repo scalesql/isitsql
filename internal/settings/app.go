@@ -34,7 +34,6 @@ type AppConfig struct {
 
 	// From settings.json
 	ClientGUID            string             `json:"clientguid"`
-	PollWorkers           int                `json:"pollWorkers"`
 	Port                  int                `json:"port"`
 	SecurityPolicy        SecurityPolicyType `json:"securityPolicy"`
 	BackupAlertHours      int                `json:"backupAlertHours"`
@@ -91,7 +90,6 @@ func ReadConfig() (AppConfig, error) {
 	var a AppConfig
 
 	// set the defaults I want.  Unmarshall will override these
-	a.PollWorkers = 0
 	a.Port = 8143
 	a.SecurityPolicy = LocalHostPolicy
 	a.BackupAlertHours = 36
@@ -208,11 +206,6 @@ func DecryptString(s string) ([]byte, error) {
 
 // Validate checks for valid values
 func (a *AppConfig) Validate() error {
-
-	if a.PollWorkers < 0 {
-		return errors.New("pollworks can't be negative")
-	}
-
 	if a.SecurityPolicy != OpenPolicy && a.SecurityPolicy != LocalHostPolicy /* && a.SecurityPolicy != DomainPolicy */ {
 		return fmt.Errorf("security policy must be: open or localhost.  Found: %s", a.SecurityPolicy)
 	}
