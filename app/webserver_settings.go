@@ -19,8 +19,6 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 
 	context := struct {
 		Context
-		//Message          string
-		//MessageClass     string
 		Pollers          int
 		Port             int
 		SecurityPolicy   settings.SecurityPolicyType
@@ -44,7 +42,6 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	var pollers int
 	var port int
 	var policy string
 	//var enableSave bool
@@ -75,7 +72,6 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 
 	// Process a POST
 	if r.Method == "POST" {
-
 		if !context.EnableSave {
 			msg := errors.New("settings: post but can't save")
 			GLOBAL_RINGLOG.Enqueue(msg.Error())
@@ -143,20 +139,6 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 
 		s.LogBackupAlertMinutes = logMinutes
 
-		// Pollers
-		pollers, err = strconv.Atoi(r.FormValue("pollWorkers"))
-		if err != nil {
-			context.Message = fmt.Sprintf("non-numeric pollers: %s", r.PostFormValue("pollWorkers"))
-			context.MessageClass = gui.MessageClassDanger
-			goto RenderForm
-		}
-
-		if pollers < 0 || pollers > 1000 {
-			context.Message = "Pollers should be between 0 and 1000"
-			context.MessageClass = gui.MessageClassDanger
-			goto RenderForm
-		}
-
 		// Security Policy
 		policy = r.FormValue("securityPolicy")
 
@@ -172,10 +154,6 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.AdminDomainGroup = strings.TrimSpace(r.PostFormValue("adminGroup"))
-
-		s.PollWorkers = pollers
-		globalPool.Resize(pollers)
-
 		err = s.Save()
 		if err == nil {
 			context.Message = "Settings saved"
@@ -186,10 +164,9 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 		globalConfig.AppConfig.HomePageURL = s.HomePageURL
 		globalConfig.Unlock()
 	}
-
 RenderForm:
 
-	context.Pollers = s.PollWorkers
+	//context.Pollers = s.PollWorkers
 	context.Port = s.Port
 	context.SecurityPolicy = s.SecurityPolicy
 	context.BackupHours = s.BackupAlertHours

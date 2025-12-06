@@ -25,20 +25,7 @@
         <h1>Settings</h1>
 
         <form class="form-horizontal" method="POST" action="/settings">
-            <div class="form-group">
-                <label for="pollWorkers" class="col-sm-5 control-label">Concurrent Pollers</label>
-
-                <div class="col-sm-3">
-                    <input type="number" class="form-control" id="pollWorkers" placeholder="" name="pollWorkers" value="{{ .Pollers }}" aria-describedby="helpBlock">
-                </div>
-
-                <div class="col-sm-7 col-sm-offset-5">
-                    <span id="helpBlock" class="help-block">The default is zero.  If zero, the number of concurrent pollers will be 4 * the number of cores.  
-                        You can see the number of cores and pollers on the <a href="/info">Info Page</a></span>    
-                </div>
-            </div>
-            
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="port" class="col-sm-5 control-label">Port</label>
                 <div class="col-sm-3">
                 <input type="number" class="form-control" id="port" placeholder="" name="port" value="{{ .Port }}"  aria-describedby="helpBlock">
@@ -46,20 +33,20 @@
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="homePage" class="col-sm-5 control-label">Home Page</label>
                 <div class="col-sm-3">
                     <input type="string" class="form-control" id="homePage" placeholder="/" name="homePage" value="{{ .HomePageURL }}"  aria-describedby="helpBlock">
                 </div>
                 <div class="col-sm-7 col-sm-offset-5">
-                <span id="helpBlock" class="help-block">Relative URL of the home page.  
+                <small class="form-text text-muted">Relative URL of the home page.  
                     The default is "/".  
                     Commonly "/tag/your-tag" or some such.  
-                    Tags -> All Servers will list all the servers.</span>
+                    Tags -> All Servers will list all the servers.</small>
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="backupHours" class="col-sm-5 control-label">Expect Full Backup Within (Hours)</label>
                 <div class="col-sm-3">
                 <input type="number" class="form-control" id="backupHours" placeholder="" name="backupHours" value="{{ .BackupHours }}"  aria-describedby="helpBlock">
@@ -67,7 +54,7 @@
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="logMinutes" class="col-sm-5 control-label">Expect Log Backup Within (MInutes)</label>
                 <div class="col-sm-3">
                 <input type="number" class="form-control" id="logMinutes" placeholder="" name="logMinutes" value="{{ .LogBackupMinutes }}"  aria-describedby="helpBlock">
@@ -76,36 +63,36 @@
             </div>
 
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="security" class="col-sm-5 control-label">Setting Page Security Policy</label>
                 <div class="col-sm-7">
-                    <select class="form-control" name="securityPolicy">
-                        <option value="open"  {{if eq .SecurityPolicy "open"}}selected="selected"{{end}} >Save from any client</option>
-                        <option value="localhost" {{if eq .SecurityPolicy "localhost"}}selected="selected"{{end}} >Only save from localhost (127.0.0.1)</option>
+                    <select class="form-select" id="security" name="securityPolicy">
+                        <option value="open"  {{if eq .SecurityPolicy "open"}}selected{{end}} >Save from any client</option>
+                        <option value="localhost" {{if eq .SecurityPolicy "localhost"}}selected{{end}}>Only save from localhost (127.0.0.1)</option>
                     </select>
                 </div>
 
-                <div class="col-sm-7 col-sm-offset-5">
-                    <span id="helpBlock" class="help-block">If this is set to localhost (the default), you must be on the server, accessing this page
-                        via localhost in order to change any settings</span>    
+                <div class="col-sm-7">
+                    <small class="form-text text-muted">If this is set to localhost (the default), you must be on the server, accessing this page
+                        via localhost in order to change any settings</small>    
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <label for="adminGroup" class="col-sm-5 control-label">Setting Page Admin Group</label>
                 <div class="col-sm-5">
                 <input type="string" class="form-control" id="adminGroup" placeholder="" name="adminGroup" value="{{ .AdminDomainGroup }}"  aria-describedby="helpBlock">
                 </div>
 
                 <div class="col-sm-7 col-sm-offset-5">
-                    <span id="helpBlock" class="help-block">If set, members of this domain group can also save settings
-                    </span>    
+                    <small class="form-text text-muted">If set, members of this domain group can also save settings
+                    </small>    
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <div class="col-sm-offset-5 col-sm-7">
-                <button type="submit" class="btn btn-default" {{if ne .EnableSave true}}disabled{{end}}>Save</button>
+                <button type="submit" class="btn btn-primary" {{if ne .EnableSave true}}disabled{{end}}>Save</button>
                 </div>
             </div>
         </form>
