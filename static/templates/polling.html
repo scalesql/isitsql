@@ -38,7 +38,7 @@
             <th>Duration</th>
             <th style="text-align: center;">Last Poll</th>
             <th></th>
-            <th></th>
+            <th style="text-align: center;">Edit</th>
         </tr>
     </thead>
 
@@ -51,7 +51,9 @@
             <td data-text="{{ .PollDuration.Nanoseconds }}">{{ .PollDuration }}</td>
             <td style="text-align: center;" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
             <td title="{{ .LastPollError }}">{{ .LastPollErrorClean }}</td>
-            <td><a href="/settings/servers/edit/{{ .MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
+            <td style=" text-align: center;"><a href="/settings/servers/edit/{{ .MapKey }}" style="text-decoration: none;"  title="Edit server settings">
+                <img src="/static/icons/gear-fill.svg" alt="Edit" class="icon">
+            </a></td>
 
         </tr>
         {{end}}

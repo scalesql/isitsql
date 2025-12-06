@@ -79,7 +79,7 @@
             </div>-->
             
             <div class="row">
-                <div class="form-group col-sm-8">
+                <div class="form-group col-sm-8 mt-3">
                     <label for="fqdn" class="control-label">Fully-Qualified Domain Name</label>
                     <input type="text" class="form-control" id="fqdn" placeholder="" name="fqdn" value="{{ .FormValues.FQDN }}">
                 </div>
@@ -87,7 +87,7 @@
 
 
             <div class="row">
-                <div class="form-group col-sm-5">
+                <div class="form-group col-sm-6 mt-3">
                     <label for="friendlyName" class="control-label">Friendly Name</label>
                     <input type="text" class="form-control" id="friendlyName" placeholder="" name="friendlyName" value="{{ .FormValues.FriendlyName }}">
                 </div>
@@ -95,9 +95,9 @@
 
 
             <div class="row">
-                <div class="form-group col-sm-3">
+                <div class="form-group col-sm-6 mt-3">
                     <label for="connection" class="control-label">Connection Type</label>
-                    <select class="form-control" id="connection" name="connection"  onChange="javascript:changeTextBoxState(this)">
+                    <select class="form-select" id="connection" name="connection"  onChange="javascript:changeTextBoxState(this)">
                         <option {{ if eq .FormValues.Connection "trusted" }} selected {{ end }} value="trusted">Windows Authentication (Trusted)</option>
                         <option {{ if eq .FormValues.Connection "credential" }} selected {{ end }} value="credential">Shared Credential</option>
                         <option {{ if eq .FormValues.Connection "userpass" }} selected {{ end }} value="userpass">SQL Server Login</option>
@@ -107,9 +107,9 @@
             </div>
 
             <div class="row">
-                <div class="form-group col-sm-3">
+                <div class="form-group col-sm-6 mt-3">
                     <label for="credentialKey" class= "control-label">Credential</label>
-                    <select class="form-control" id="credentialKey" name="credentialKey">
+                    <select class="form-select" id="credentialKey" name="credentialKey">
                         <option value=""></option>
                         {{ range $key, $value := .Credentials }}
                             <option value="{{ $key }}">{{ $value.Name }}</option>>
@@ -119,7 +119,7 @@
             </div>
 
             <div class="row">
-                <div class="form-group col-sm-5">
+                <div class="form-group col-sm-5 mt-3">
                     <label for="Login" class="control-label">Login Name</label>
                     <input type="text" class="form-control" id="Login" placeholder="" name="Login" value="{{ .FormValues.Login }}">
 
@@ -130,7 +130,7 @@
 
 
             <div class="row">
-                <div class="form-group col-sm-12">
+                <div class="form-group col-sm-12 mt-3">
                     <label for="ConnectionString" class="control-label">Custom Connection String</label>
                     <input type="text" class="form-control" id="ConnectionString" placeholder="" name="ConnectionString" value="{{ .FormValues.ConnectionString }}">
                 </div>
@@ -138,7 +138,7 @@
 
 
             <div class="row">
-                <div class="form-group col-sm-6">
+                <div class="form-group col-sm-6 mt-3">
                     <label for="Tags" class="control-label">Tags</label>
                     <input type="text" class="form-control" id="Tags" placeholder="" name="Tags" value="{{ .FormValues.Tags }}">
                 </div>
@@ -146,9 +146,9 @@
 
 
 
-            <div class="form-group">
+            <div class="form-group mt-3">
      
-                <button type="submit"  {{if ne .EnableSave true}}disabled{{end}}  class="btn btn-default">Save</button>
+                <button type="submit"  {{if ne .EnableSave true}}disabled{{end}}  class="btn btn-primary">Save</button>
             </div>
         </form>
 
@@ -158,7 +158,7 @@
 </div>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-6 mt-3">
         <h2>Notes</h2>
         <ol>
             <li>FQDN is the fully qualified domain name.  This name (and port) must resolve from

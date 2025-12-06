@@ -64,7 +64,7 @@
 {{ if .OneServer }}
     <div class="row">
         <div class="col-md-6">
-            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; vertical-align: baseline; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} <a href="/settings/servers/edit/{{ .OneServer.MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog" style="font-size: 50%;"></span></a></h1>
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; vertical-align: baseline; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }}</h1>
         </div>
     </div>
 

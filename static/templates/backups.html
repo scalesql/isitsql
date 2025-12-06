@@ -61,7 +61,6 @@
                             <th style="text-align: center; color:darkgray;" class="sorter-metric" data-metric-name-abbr="b|B" data-sortInitialOrder="desc">Log</th>
                             <th style="text-align: center;">Oldest Full</th>
                             <th style="text-align: center;">Oldest Log</th>
-                            <th></th>
                         </tr>
                     </thead>
                     {{ range $k2, $v2 := .InstanceSummary }}
@@ -87,7 +86,6 @@
                             <td style="text-align: center;" data-text="{{ $v2.OldestLogBackup | timetoYMDT}}">
                                     {{ if hasTimeValue $v2.OldestLogBackup }}{{ durationDifference $v2.OldestLogBackup $now }}{{end}}
                             </td>
-                            <td><a href="/settings/servers/edit/{{ .ServerMapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
 
                                     </tr>
                     {{ end }}
@@ -117,7 +115,6 @@
                 
                 <th style="text-align: center;">Full Backup</th>
                 <th style="text-align: center;">Log Backup</th>
-                <th></th>
             </tr>
         </thead>
             {{ range $k, $v := .DatabaseAlerts }}
@@ -145,7 +142,6 @@
                     {{ if hasTimeValue $v.LastLogBackup }}title="{{ $v.LastLogBackup | timetoYMDT }} (server time zone) to {{ $v.LastLogBackupDevice }} on {{ .LastLogBackupInstance }}"{{end}}>
                         {{ if hasTimeValue $v.LastLogBackup }}{{ durationDifference $v.LastLogBackup $v.CurrentTime }}{{end}}
                 </td>
-                <td><a href="/settings/servers/edit/{{ .ServerMapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
 
             </tr>
             {{ end }}

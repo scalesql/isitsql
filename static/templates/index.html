@@ -58,7 +58,7 @@
             <th style="text-align: center;" class="sorter-duration">Up</th>
             <!--<th>Version</th>-->
             <th style="text-align: center;">Last Poll</th>
-            <th></th>
+
         </tr>
     </thead>
 
@@ -139,7 +139,6 @@
             <!--<td title="{{ .ProductEdition }}">{{ .VersionString }} {{ .ProductLevel }} ({{ .ProductVersion }})</td>-->
             <td style="text-align: center;" data-text="{{ .LastPollTime  | timetoYMDT}}">{{ .LastPollTime | shortDuration }}</td>
             <td title="{{ .LastPollError }}">{{ .LastPollErrorClean 45 }}</td>
-            <td><a href="/settings/servers/edit/{{ .MapKey }}" title="Edit server settings"><span class="glyphicon glyphicon-cog"></span></a></td>
 
         </tr>
         {{end}}
