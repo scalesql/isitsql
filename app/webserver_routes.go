@@ -60,6 +60,7 @@ func launchWebServer() {
 	group.HandleFunc("GET /log", logPage)
 	group.HandleFunc("GET /info", infoPage)
 	group.HandleFunc("GET /about", aboutPage)
+	group.HandleFunc("GET /docs", docsPage)
 	group.HandleFunc("GET /ips", ipPage)
 	group.HandleFunc("GET /versions", versionPage)
 	group.HandleFunc("GET /versions/csv", versionPageCSV)

@@ -28,6 +28,7 @@ Please see the [Documentation](static/docs/README.md) for more details.
 ### vNext 
 * Improve MarkDown formatting in the server information page
 * Ignore XE_LIVE_TARGET_TVF wait type
+* Lots of HTML and forms cleanup
 
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database

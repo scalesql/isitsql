@@ -21,6 +21,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/leekchan/gtf"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/appringlog"
 	"github.com/scalesql/isitsql/internal/build"
@@ -33,6 +34,9 @@ import (
 	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/scalesql/isitsql/static"
 	"github.com/sirupsen/logrus"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 )
 
 type PageAlerts struct {
@@ -526,6 +530,71 @@ func infoPage(w http.ResponseWriter, req *http.Request) {
 
 	//fmt.Println(len(context.LogEvents))
 	renderFSDynamic(w, "info", context)
+}
+
+func docsPage(w http.ResponseWriter, req *http.Request) {
+	var err error
+	context := struct {
+		Context
+		Profiler bool
+		Body     template.HTML
+	}{
+		Context: Context{
+			Title:       "Docs",
+			UnixNow:     time.Now().Unix() * 1000,
+			ErrorList:   getServerErrorList(),
+			HeaderRight: fmt.Sprintf("Refreshed: %s (%s)", time.Now().Format("15:04:05"), version),
+			TagList:     globalTagList.getTags(),
+			AppConfig:   getGlobalConfig(),
+		},
+	}
+	context.Body = "<p>Body</p>"
+	// if gui.UseLocal() {
+	// 	// read the local file system for the bytes
+	// } else {
+	// 	// read the template for the bytes
+	// }
+	str, err := static.ReadFile(gui.UseLocal(), "/docs/README.md")
+	if err != nil {
+		WinLogln(err)
+		logrus.Error(errors.Wrap(err, "docs.html"))
+	}
+	// markdown conversion
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			extension.TaskList,
+			extension.DefinitionList,
+			extension.Footnote,
+			extension.Typographer,
+			//extension.Linkify,
+			extension.Strikethrough,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		// goldmark.WithRendererOptions(
+		// 	html.WithHardWraps(),
+		// 	html.WithXHTML(),
+		//),
+	)
+
+	var buf bytes.Buffer
+	err = md.Convert([]byte(str), &buf)
+	if err != nil {
+		WinLogln(err)
+		logrus.Error(errors.Wrap(err, "md.convert"))
+	}
+	bm := bluemonday.UGCPolicy()
+	bb := bm.SanitizeBytes(buf.Bytes())
+
+	context.Body = template.HTML(string(bb))
+	err = gui.ExecuteTemplates(w, context, "templates/base.html", "templates/docs.html")
+	if err != nil {
+		WinLogln(err)
+		logrus.Error(errors.Wrap(err, "docs.html"))
+	}
 }
 
 func aboutPage(w http.ResponseWriter, req *http.Request) {
