@@ -77,7 +77,7 @@ func launchWebServer() {
 	group.HandleFunc("GET /server/{server}/w2", serverW2Page)
 	group.HandleFunc("GET /server/{server}/w2/diag", dynamicWaitsDiagnostic)
 	group.HandleFunc("GET /server/{server}/waits", ServerWaitPage)
-	group.HandleFunc("GET /server/{server}/info", ServerInfoPage)
+	group.HandleFunc("GET /server/{server}/about", ServerAboutPage)
 	group.HandleFunc("GET /server/{server}/raw", serverRawPage)
 	group.HandleFunc("GET /server/{server}/json", serverJSONPage)
 	group.HandleFunc("GET /server/{server}/databases", serverDatabasesPage)

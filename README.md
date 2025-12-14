@@ -25,8 +25,9 @@ Please see the [Documentation](static/docs/README.md) for more details.
 
 ## What's New
 
-### vNext 
-* Improve MarkDown formatting in the server information page
+### vNext
+* Rename the Server Information Page as the Server About page
+* Improve MarkDown formatting in the Server About page ([@Kai78](https://github.com/scalesql/isitsql/pull/6))
 * Ignore XE_LIVE_TARGET_TVF wait type
 * Lots of HTML and forms cleanup
 

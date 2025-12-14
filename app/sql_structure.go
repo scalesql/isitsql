@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"html/template"
 	"net"
 	"path"
 	"strings"
@@ -299,8 +300,17 @@ func (s SqlServer) Slug() string {
 	return path.Join(host, instance)
 }
 
+// IP2CSVString returns the IP addresses as a CSV string
 func (srv SqlServer) IP2CSVString() string {
-	//arr := make([]string, 0, 12)
 	result := strings.Join(srv.IPAdresses, ", ")
 	return result
+}
+
+// IP2HTMLList returns the IP addresses an HTML unordered list
+func (srv SqlServer) IP2HTMLList() template.HTML {
+	var list string
+	for _, ip := range srv.IPAdresses {
+		list += "<li>" + ip + "</ip>"
+	}
+	return template.HTML("<ul>" + list + "</ul>")
 }

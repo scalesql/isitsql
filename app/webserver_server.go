@@ -5,28 +5,28 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/docs"
 	"github.com/scalesql/isitsql/internal/hadr"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func ServerInfoPage(w http.ResponseWriter, req *http.Request) {
+func ServerAboutPage(w http.ResponseWriter, req *http.Request) {
 	var Page struct {
 		Context
 		Docs         []docs.Document
 		NoDocsFolder bool
 		Problems     []error
-		Values       map[string]string
+		Values       map[string]any
 	}
-	Page.Context.ServerPageActiveTab = "info"
-	Page.Title = "Info"
+	Page.Context.ServerPageActiveTab = "about"
+	Page.Title = "About"
 	Page.TagList = globalTagList.getTags()
 	Page.ErrorList = getServerErrorList()
 	globalConfig.RLock()
 	Page.AppConfig = globalConfig.AppConfig
 	globalConfig.RUnlock()
-	m := make(map[string]string)
+	m := make(map[string]any)
 	key := req.PathValue("server")
 	s, ok := servers.CloneOne(key)
 	if !ok {
@@ -35,13 +35,13 @@ func ServerInfoPage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	Page.OneServer = &s
-	Page.Title = s.ServerName + " Info"
+	Page.Title = s.ServerName + " About"
 
 	m["Version: Build"] = s.ProductVersion
 	m["Version: Edition"] = s.ProductEdition
 	m["Installed"] = s.Installed.Format("2006-01-02")
 	m["OS: Name"] = fmt.Sprintf("%s (%s)", s.OSName, s.OSArch)
-	m["OS: IPs"] = s.IP2CSVString()
+	m["OS: IPs"] = s.IP2HTMLList()
 	m["Version"] = fmt.Sprintf("%s %s %s", s.VersionString, s.ProductLevel, s.ProductUpdateLevel)
 	m["IsItSQL: FQDN"] = s.FQDN
 	m["IsItSQL: Tags"] = s.TagString()
@@ -84,5 +84,5 @@ func ServerInfoPage(w http.ResponseWriter, req *http.Request) {
 	Page.Docs = dd
 	Page.Problems = problems
 	Page.Values = m
-	renderFSDynamic(w, "server-info", Page)
+	renderFSDynamic(w, "server-about", Page)
 }

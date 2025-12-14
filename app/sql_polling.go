@@ -462,6 +462,7 @@ func (sw *SqlServerWrapper) getIP() error {
 			result = append(result, str)
 		}
 	}
+	sort.Strings(result)
 	sw.Lock()
 	defer sw.Unlock()
 	sw.IPAdresses = result
