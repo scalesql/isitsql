@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-//go:embed templates css js img fonts docs
+//go:embed templates css js img fonts docs icons
 var fs embed.FS
 
 // HttpFS returns either an embedded file system or a reference to the local ./static folder.
