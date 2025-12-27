@@ -30,6 +30,7 @@ Please see the [Documentation](static/docs/README.md) for more details.
 * Improve MarkDown formatting in the Server About page ([@Kai78](https://github.com/scalesql/isitsql/pull/6))
 * Ignore XE_LIVE_TARGET_TVF wait type
 * Lots of HTML and forms cleanup
+* Add SQL Server 2025 support
 
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database

@@ -164,8 +164,9 @@ _Note:_ If you enter a server using either a SQL Server login or custom connecti
 
 The application requires the following permissions for the login that is running the service or executable or the login that is used to connect to the server:
 
-*   `VIEW SERVER STATE` - View basic server information such as CPU, disk I/O, waits, and version.
-*   `VIEW ANY DEFINITION` - View database details such as name, status, and size.
+*   `VIEW SERVER STATE` - View basic server information such as CPU, disk I/O, waits, and version
+*   `VIEW ANY DEFINITION` - View database details such as name, status, and size
+* For SQL Server 2022 and later, `VIEW SERVER PERFORMANCE STATE` is also suggested
 *   `msdb` database: `SQLAgentReaderRole` and `db_datareader` database role - View SQL Server Agent Job information.  (It also works with `sysadmin` or `db_owner` but those aren't recommended.)
 * Permissions can be easily granted using [SQLDSC](https://www.sqldsc.com/)
 

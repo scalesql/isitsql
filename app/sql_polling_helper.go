@@ -173,6 +173,10 @@ func (s *SqlServer) ProductVersionString(v string) string {
 		return "SQL Server " + v
 	}
 
+	if v[0:4] == "17.0" {
+		return "SQL Server 2025"
+	}
+
 	if v[0:4] == "16.0" {
 		return "SQL Server 2022"
 	}
