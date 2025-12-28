@@ -26,11 +26,12 @@ Please see the [Documentation](static/docs/README.md) for more details.
 ## What's New
 
 ### vNext
-* Rename the Server Information Page as the Server About page
+* Rename the Server Information Page as the Server About page and move the tab to the end
 * Improve MarkDown formatting in the Server About page ([@Kai78](https://github.com/scalesql/isitsql/pull/6))
 * Ignore XE_LIVE_TARGET_TVF wait type
 * Lots of HTML and forms cleanup
 * Add SQL Server 2025 support
+* Add tags for the operating system (`os-windows`, `os-linux`) and container (`container-none`, `container-linux`, etc.).  SQL Server 2016 and earlier will show `os-undefined` since we can't officially determine the OS.
 
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database

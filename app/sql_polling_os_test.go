@@ -61,6 +61,11 @@ func TestOSVersion(t *testing.T) {
 		Copyright (C) 2022 Microsoft Corporation
 		Express Edition (64-bit) on Linux (Ubuntu 20.04.6 LTS) <X64>`,
 			os: "Linux (Ubuntu 20.04.6 LTS)", arch: "x64"},
+		{got: `Microsoft SQL Server 2025 (RTM) - 17.0.1000.7 (X64) 
+	Oct 21 2025 12:05:57 
+	Copyright (C) 2025 Microsoft Corporation
+	Enterprise Evaluation Edition (64-bit) on Linux (Ubuntu 22.04.5 LTS) <X64>`,
+			os: "Linux (Ubuntu 22.04.5 LTS)", arch: "x64"},
 
 		{got: ``,
 			os: "unknown", arch: "unknown"},

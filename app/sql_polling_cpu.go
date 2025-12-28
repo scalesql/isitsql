@@ -3,14 +3,14 @@ package app
 import (
 	"time"
 
-	"github.com/scalesql/isitsql/internal/cpuring"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/cpuring"
 )
 
 func (s *SqlServerWrapper) GetCPU2() error {
 	s.RLock()
 	db := s.DB
-	incontainer := s.InContainer
+	containertype := s.ContainerType
 	s.RUnlock()
 
 	// we convert the time to UTC and then a standard string
@@ -70,7 +70,7 @@ order by [timestamp] asc
 			return errors.Wrap(err, "scan")
 		}
 		// if in a container, don't record the "other" CPU
-		if incontainer {
+		if containertype != 0 {
 			result.other = 0
 		}
 		// Parse the UTC string and conver to local time

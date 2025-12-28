@@ -9,24 +9,41 @@ import (
 var atatVersionRegex = regexp.MustCompile(`(?m) on\s(?P<os>.*)\s<(?P<arch>.*)>`)
 
 func (wrap *SqlServerWrapper) PollContainer() error {
-	// These fields only exist in SQL Server 2019 and higher
-	if wrap.MajorVersion < 15 {
+	if wrap.MajorVersion <= 13 { // SQL Server 2016 and earlier
 		return nil
 	}
-	var containerType int
-	err := wrap.DB.QueryRow("select container_type from sys.dm_os_sys_info").Scan(&containerType)
-	// if err == sql.ErrNoRows, we will parse an empty string and get "unknown"
+
+	query := `
+	SELECT
+		 host_platform = (SELECT host_platform FROM sys.dm_os_host_info) 			-- 2017
+		,host_distribution = (SELECT host_distribution FROM sys.dm_os_host_info) 	-- 2017
+	`
+	if wrap.MajorVersion >= 15 { // SQL Server 2019 and later
+		query += `
+		,container_type = (SELECT container_type FROM sys.dm_os_sys_info) 			-- 2019
+		,container_type_desc = (SELECT container_type_desc FROM sys.dm_os_sys_info)	-- 2019
+	`
+	} else {
+		query += `
+		,container_type = 0 		
+		,container_type_desc = ''
+	`
+	}
+
+	var platform, distr, cdesc string
+	var ctype int32
+	err := wrap.DB.QueryRow(query).Scan(&platform, &distr, &ctype, &cdesc)
+	if err == sql.ErrNoRows {
+		return nil
+	}
 	if err != nil {
-		if err != sql.ErrNoRows {
-			return err
-		}
+		return err
 	}
 	wrap.Lock()
-	if containerType != 0 {
-		wrap.InContainer = true
-	} else {
-		wrap.InContainer = false
-	}
+	wrap.HostPlatform = platform
+	wrap.HostDistribution = distr
+	wrap.ContainerType = ctype
+	wrap.ContainerDescription = cdesc
 	wrap.Unlock()
 	return nil
 }

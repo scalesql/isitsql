@@ -149,11 +149,17 @@ type SqlServer struct {
 	IgnoreBackups     bool                        `json:"ignore_backups,omitempty"`
 	IgnoreBackupsList []string                    `json:"ignore_backups_list,omitempty"`
 
-	OSName      string      `json:"os_name"`
-	OSArch      string      `json:"os_arch"`
-	InContainer bool        `json:"in_container"`
-	IPAdresses  []string    `json:"ip_addresses"`
-	WaitBox     *dwaits.Box // `json:"wait_box"`
+	OSName string `json:"os_name"`
+	OSArch string `json:"os_arch"`
+
+	IPAdresses []string    `json:"ip_addresses"`
+	WaitBox    *dwaits.Box // `json:"wait_box"`
+
+	// InContainer bool        `json:"in_container"`
+	ContainerType        int32  `json:"container_type"`        // sys.dm_os_sys_info
+	ContainerDescription string `json:"container_description"` // sys.dm_os_sys_info
+	HostPlatform         string `json:"host_platform"`         // sys.dm_os_host_info
+	HostDistribution     string `json:"host_distribution"`     // sys.dm_os_host_info
 
 	RunningJobs agent.JobList
 	FailedJobs  []agent.JobHistoryRow

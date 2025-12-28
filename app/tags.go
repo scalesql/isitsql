@@ -41,17 +41,9 @@ func parseTags(s string) ([]string, error) {
 }
 
 func (list *ServerList) mapTags() {
-	globalConfig.RLock()
-	userTagsEnabled := true
-	globalConfig.RUnlock()
-	//WinLogln("*************************Mapping tags...")
-	// map of tags hold map of servers
-	//tl := make(map[string]map[string]bool)
-	tl := make(tagMap)
+	newTagList := make(tagMap)
 
-	// Loop through each server and process
 	serverKeys := list.Keys()
-	//fmt.Println(serverKeys)
 	var tags []string
 
 	// Process each server
@@ -62,68 +54,88 @@ func (list *ServerList) mapTags() {
 
 		if ok {
 			v.RLock()
-			if userTagsEnabled {
-				tags = v.Tags
+			tags = v.Tags
 
-				// domain tag
-				if v.Domain != "" {
-					tags = append(tags, "domain-"+v.Domain)
-				}
-
-				// edition tag
-				switch v.EditionID {
-				case 0:
-					tags = append(tags, "edition-unknown")
-				case 1804890536:
-					tags = append(tags, "edition-enterprise-cal")
-				case 1872460670:
-					tags = append(tags, "edition-enterprise-core")
-				case 610778273:
-					tags = append(tags, "edition-enterprise-eval")
-				case 284895786:
-					tags = append(tags, "edition-bizint")
-				case -1592396055:
-					tags = append(tags, "edition-express")
-				case -133711905:
-					tags = append(tags, "edition-express-advsvcs")
-				case -2117995310:
-					tags = append(tags, "edition-developer")
-				case -1534726760:
-					tags = append(tags, "edition-standard")
-				case 1293598313:
-					tags = append(tags, "edition-web")
-				case 1674378470:
-					tags = append(tags, "edition-azure")
-				default:
-					tags = append(tags, "edition-unknown")
-				}
-
+			// domain tag
+			if v.Domain != "" {
+				tags = append(tags, "domain-"+v.Domain)
 			} else {
-				tags = []string{}
+				tags = append(tags, "domain-none")
+			}
+
+			// edition tag
+			switch v.EditionID {
+			case 0:
+				tags = append(tags, "edition-unknown")
+			case 1804890536:
+				tags = append(tags, "edition-enterprise-cal")
+			case 1872460670:
+				tags = append(tags, "edition-enterprise-core")
+			case 610778273:
+				tags = append(tags, "edition-enterprise-eval")
+			case 284895786:
+				tags = append(tags, "edition-bizint")
+			case -1592396055:
+				tags = append(tags, "edition-express")
+			case -133711905:
+				tags = append(tags, "edition-express-advsvcs")
+			case -2117995310:
+				tags = append(tags, "edition-developer")
+			case -1534726760:
+				tags = append(tags, "edition-standard")
+			case 1293598313:
+				tags = append(tags, "edition-web")
+			case 1674378470:
+				tags = append(tags, "edition-azure")
+			default:
+				tags = append(tags, "edition-unknown")
+			}
+
+			// os tag
+			if v.HostPlatform != "" {
+				tags = append(tags, "os-"+strings.ToLower(v.HostPlatform))
+			} else {
+				tags = append(tags, "os-undefined")
+			}
+
+			switch v.ContainerType {
+			case 0:
+				tags = append(tags, "container-none")
+			case 1:
+				tags = append(tags, "container-linux")
+			case 2:
+				tags = append(tags, "container-windows")
+			case 3:
+				tags = append(tags, "container-hyperv")
+			default:
+				tags = append(tags, "container-unknown")
 			}
 
 			// version tag
-			sqlVersion := strings.Replace(v.VersionString, " ", "-", -1)
+			sqlVersion := strings.ReplaceAll(v.VersionString, " ", "-")
 			if sqlVersion != "" && len(sqlVersion) >= 14 {
 				tags = append(tags, sqlVersion[0:15])
+			} else {
+				tags = append(tags, "sql-server-undefined")
 			}
 			v.RUnlock()
 
 			// Process each tag
 			for _, t := range tags {
-				//WinLogln(t, "=>", v.Name)
 				isGenerated := false
-
 				lowerT := strings.ToLower(t)
 
-				if strings.HasPrefix(lowerT, "edition-") || strings.HasPrefix(lowerT, "domain-") || strings.HasPrefix(lowerT, "sql-server-") {
+				if strings.HasPrefix(lowerT, "edition-") ||
+					strings.HasPrefix(lowerT, "domain-") ||
+					strings.HasPrefix(lowerT, "sql-server-") ||
+					strings.HasPrefix(lowerT, "os-") ||
+					strings.HasPrefix(lowerT, "container-") {
 					isGenerated = true
 				}
 
-				_, ok := tl[lowerT]
+				_, ok := newTagList[lowerT]
 				if ok {
-					//WinLogln(lowerT, "Already exists -- appending")
-					tl[lowerT].Servers[serverKey] = true
+					newTagList[lowerT].Servers[serverKey] = true
 				} else {
 					m := make(map[string]bool)
 					m[serverKey] = true
@@ -133,8 +145,7 @@ func (list *ServerList) mapTags() {
 						Servers:     m,
 						IsGenerated: isGenerated,
 					}
-					//WinLogln(t2)
-					tl[lowerT] = t2
+					newTagList[lowerT] = t2
 				}
 			}
 		}
@@ -142,6 +153,6 @@ func (list *ServerList) mapTags() {
 	}
 
 	globalTagList.Lock()
-	globalTagList.Tags = tl
+	globalTagList.Tags = newTagList
 	globalTagList.Unlock()
 }

@@ -99,15 +99,13 @@ func (l SqlServerArray) getTotal() TotalLine {
 	for _, v := range l {
 
 		// if we dont' have this information just continue through the loop
-		//v.RLock()
-		if v.Domain == "" || v.PhysicalName == "" || v.ServerName == "" {
-			//v.RUnlock()
+		// Linux containers don't have domains
+		if /* v.Domain == "" ||*/ v.PhysicalName == "" || v.ServerName == "" {
 			continue
 		}
 
 		machineKey := v.Domain + "\\" + v.PhysicalName
 		instanceKey := v.Domain + "\\" + v.ServerName
-		//v.RUnlock()
 
 		// Set instance level counters
 		_, exists := instances[instanceKey]
@@ -125,7 +123,6 @@ func (l SqlServerArray) getTotal() TotalLine {
 			t.Databases += v.DatabaseCount
 			t.CoreUsageFactor += v.LastSQLCPU
 			t.CoresUsedSQL += v.CoresUsedSQL
-			//v.RUnlock()
 
 			t.SQLPerSecond += v.GetLastSqlPerSecond()
 		}
@@ -134,13 +131,11 @@ func (l SqlServerArray) getTotal() TotalLine {
 		_, exists = machines[machineKey]
 		if !exists {
 			machines[machineKey] = true
-			//v.RLock()
 			t.CPUCount += v.CpuCount
 			t.MachineCount++
 			t.PhysicalMemoryKB += v.PhysicalMemoryKB
 			t.CoresUsedOther += v.CoresUsedOther
 			t.MemoryCapKB += v.MemoryCap()
-			//v.RUnlock()
 		}
 	}
 
@@ -274,9 +269,9 @@ func getTagLines(isgenerated bool) map[string]TotalLine {
 	localTagMap := globalTagList.Tags
 	globalTagList.RUnlock()
 
-	//fmt.Println(tags)
+	// fmt.Println(localTagMap)
 	for k, t := range localTagMap {
-		// skip system tags
+		// we are getting user or system tags
 		if t.IsGenerated != isgenerated {
 			continue
 		}
