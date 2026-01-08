@@ -31,7 +31,7 @@ Please see the [Documentation](static/docs/README.md) for more details.
 * Ignore XE_LIVE_TARGET_TVF wait type
 * Lots of HTML and forms cleanup
 * Add SQL Server 2025 support
-* Add tags for the operating system (`os-windows`, `os-linux`) and container (`container-none`, `container-linux`, etc.).  SQL Server 2016 and earlier will show `os-undefined` since we can't officially determine the OS.
+* Add tags for the operating system (`os-windows`, `os-linux`) and container (`container-none`, `container-linux`, etc.).  SQL Server 2016 and earlier will show `os-windows` since they could only run on Windows.
 
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database

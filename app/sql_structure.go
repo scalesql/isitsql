@@ -125,7 +125,7 @@ type SqlServer struct {
 	ProductVersion     string    `json:"product_version,omitempty"`      // ProductVersion holds 11.0.2345.1
 	VersionString      string    `json:"version_string,omitempty"`       // Version string holds SQL Server 2016
 	ProductEdition     string    `json:"product_edition,omitempty"`
-	MajorVersion       int       `json:"major_version,omitempty"`
+	MajorVersion       int       `json:"major_version,omitempty"` // 13=2016, 14=2017, 15=2019, 16=2022, 17=2025
 	EditionID          int64     `json:"edition_id,omitempty"`
 	Installed          time.Time `json:"installed,omitempty"`
 	PLE                int64     `json:"ple,omitempty"`

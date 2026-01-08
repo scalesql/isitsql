@@ -44,8 +44,13 @@
 
             <li class="dropdown dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Auto-Generated Tags</a>
               <ul class="dropdown-menu">
-                {{range .TagList }}{{- if .IsGenerated }}
-                <li><a class="dropdown-item" href="/tag/{{ .AsEntered }}">{{ .AsEntered }}</a></li>{{ end -}}{{ end }}
+                {{$lastPrefix := ""}}
+                {{range .TagList }}
+                {{- if .IsGenerated }}
+                {{if and $lastPrefix (ne $lastPrefix .Prefix)}}<li><hr class="dropdown-divider"></li>{{end}}
+                <li><a class="dropdown-item" href="/tag/{{ .AsEntered }}">{{ .AsEntered }}</a></li>
+                {{$lastPrefix = .Prefix}}
+                {{ end -}}{{ end }}
               </ul>
             </li>
             <li><hr class="dropdown-divider"></li>
