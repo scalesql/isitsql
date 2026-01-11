@@ -1120,13 +1120,13 @@ func serverConnPage(w http.ResponseWriter, req *http.Request) {
 
 	var pageData struct {
 		Context
-		Pool       map[string]interface{}
-		Connection map[string]interface{}
+		Pool       map[string]any
+		Connection map[string]any
 	}
 
 	pageData.Context = getContext("Server Not Found")
-	pageData.Pool = make(map[string]interface{})
-	pageData.Connection = make(map[string]interface{})
+	pageData.Pool = make(map[string]any)
+	pageData.Connection = make(map[string]any)
 	pageData.Context.ServerPageActiveTab = "info"
 	server := req.PathValue("server")
 	servers.RLock()
@@ -1156,19 +1156,19 @@ func serverConnPage(w http.ResponseWriter, req *http.Request) {
 	wr.RUnlock()
 
 	rows, err := db.Query(`
-		SELECT	c.session_id				AS SessionID, 
-				c.connect_time				AS ConnectTime, 
-				c.net_transport				AS NetTransport, 
-				c.protocol_type				AS ProtocolType, 
-				c.protocol_version			AS ProtocolVersion, 
-				c.auth_scheme				AS AuthScheme, 
-				s.login_time				AS LoginTime, 
-				s.host_name					AS HostName, 
-				s.program_name				AS ProgramName, 
-				s.client_version			AS ClientVersion, 
-				s.client_interface_name		AS ClientInterfaceName, 
-				s.login_name				AS LoginName, 
-				SYSDATETIME()				AS [Now] 
+		SELECT	c.session_id				AS session_id, 
+				c.connect_time				AS connect_time, 
+				c.net_transport				AS net_transport, 
+				c.protocol_type				AS protocol_type, 
+				c.protocol_version			AS protocol_version, 
+				c.auth_scheme				AS auth_scheme, 
+				s.login_time				AS login_time, 
+				s.host_name					AS host_name, 
+				s.program_name				AS program_name, 
+				s.client_version			AS client_version, 
+				s.client_interface_name		AS client_interface_name, 
+				s.login_name				AS login_name, 
+				SYSDATETIMEOFFSET()			AS [SYSDATETIMEOFFSET()] 
 		FROM	sys.dm_exec_connections c
 		JOIN	sys.dm_exec_sessions s ON s.session_id = c.session_id
 		WHERE	c.session_id = @@SPID
@@ -1178,19 +1178,28 @@ func serverConnPage(w http.ResponseWriter, req *http.Request) {
 		defer rows.Close()
 		cols, _ := rows.Columns()
 
-		pointers := make([]interface{}, len(cols))
-		container := make([]interface{}, len(cols))
+		pointers := make([]any, len(cols))
+		container := make([]any, len(cols))
 		for i := range pointers {
 			pointers[i] = &container[i]
 		}
 		rows.Next()
 		rows.Scan(pointers...)
 
+		// range over the values (columns) in the array
 		for i, v := range container {
-			//lint:ignore S1034 we don't use the type
-			switch v.(type) {
+			switch v := v.(type) { // handle types differently
+			case time.Time:
+				switch cols[i] { // some times have offsets
+				case "SYSDATETIMEOFFSET()":
+					pageData.Connection[cols[i]] = v.Format("Monday, 02 Jan 2006 15:04:05 -0700")
+				case "connect_time", "login_time":
+					pageData.Connection[cols[i]] = v.Format("Monday, 02 Jan 2006 15:04:05")
+				default:
+					pageData.Connection[cols[i]] = v
+				}
 			case []byte:
-				pageData.Connection[cols[i]] = string(v.([]byte))
+				pageData.Connection[cols[i]] = string(v)
 			default:
 				pageData.Connection[cols[i]] = v
 			}
@@ -1223,7 +1232,7 @@ func serverConnPage(w http.ResponseWriter, req *http.Request) {
 	renderFSDynamic(w, "server-conn", pageData)
 }
 
-func JSONError(w http.ResponseWriter, err interface{}, code int) {
+func JSONError(w http.ResponseWriter, err any, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
@@ -1733,7 +1742,7 @@ func renderFS(w http.ResponseWriter, tmpl string, context Context) {
 
 }
 
-func renderFSDynamic(w http.ResponseWriter, tmpl string, c2 interface{}) {
+func renderFSDynamic(w http.ResponseWriter, tmpl string, c2 any) {
 	// TODO: cache all the templates
 	// https://stackoverflow.com/questions/50842389/parsing-multiple-templates-in-go
 
