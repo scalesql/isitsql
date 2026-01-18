@@ -165,8 +165,11 @@ func GetAGList(db *sql.DB, serverName string) (map[string]*AG, error) {
 			return m, errors.Wrap(err, "query-ag-scan")
 		}
 
-		// Ignore any non-primary replicas
-		if !strings.EqualFold(ag.PrimaryReplica, serverName) {
+		// If this server isn't the primary AND the primary isn't null, then skip (we are on a secondary)
+		// If the query returns a NULL for the primary replica, we will add from any node
+		// This will likely cause the display to flap with all kinds of errors, but that's fine
+		// Just get it on the screen and we can go from there
+		if !strings.EqualFold(ag.PrimaryReplica, serverName) && ag.PrimaryReplica != "(NULL)" {
 			continue
 		}
 
