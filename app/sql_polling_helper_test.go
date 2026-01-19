@@ -11,7 +11,7 @@ func TestServerVersion(t *testing.T) {
 	s := SqlServer{}
 	assert.Equal("SQL Server 2016", s.ProductVersionString("13.0"))
 	assert.Equal("SQL Server Unknown", s.ProductVersionString(""))
-	assert.Equal("SQL Server 17.0", s.ProductVersionString("17.0"))
+	assert.Equal("SQL Server 2025", s.ProductVersionString("17.0"))
 	assert.Equal("SQL Server 7.0", s.ProductVersionString("7.0"))
 	assert.Equal("SQL Server 2022", s.ProductVersionString("16.0.600.9"))
 }
