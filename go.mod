@@ -2,6 +2,10 @@ module github.com/scalesql/isitsql
 
 go 1.23.4
 
+godebug (
+	x509negativeserial=1
+)
+
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/alexbrainman/odbc v0.0.0-20250601004241-49e6b2bc0cf0
