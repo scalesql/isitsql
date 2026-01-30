@@ -34,6 +34,7 @@ Please see the [Documentation](static/docs/README.md) for more details.
 * Add tags for the operating system (`os-windows`, `os-linux`) and container (`container-none`, `container-linux`, etc.).  SQL Server 2016 and earlier will show `os-windows` since they could only run on Windows.
 * On the server connection page (`/server/server_key/conn`), only display the time zone if we have it and rename the fields to match the column names
 * For Availability Groups, if an AG returns NULL for the primary replica, continue to poll the AG from all nodes
+* Add support for SQL Server in Containers that occasionally encrypt the login process using a certificate with a negative serial number.  [Default TLS cert uses negative serial number](https://github.com/microsoft/mssql-docker/issues/895)
 
 ### 2.5 (August 2025) 
 * Option to store key server metrics in a SQL Server Database
