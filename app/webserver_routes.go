@@ -52,6 +52,7 @@ func launchWebServer() {
 	group.Handle("/static/", http.StripPrefix("/static/", http.FileServer(static.HttpFS(useLocal))))
 
 	group.HandleFunc("GET /{$}", Home)
+	group.HandleFunc("GET /all", All)
 	group.HandleFunc("GET /connections", ConnectionsPage)
 	group.HandleFunc("GET /infographic", infoGraphicPage)
 	group.HandleFunc("GET /tag/{tag}", tagPage)

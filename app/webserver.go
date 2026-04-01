@@ -314,10 +314,19 @@ func userTagPage(w http.ResponseWriter, req *http.Request) {
 	renderFSDynamic(w, "tagsummary", context)
 }
 
-func tagPage(w http.ResponseWriter, req *http.Request) {
+// cloneServersByTag returns a SqlServerArray for all servers matching the given tag.
+func cloneServersByTag(t tag) SqlServerArray {
+	s := make(SqlServerArray, 0, len(t.Servers))
+	for key := range t.Servers {
+		srv, ok := servers.CloneOne(key)
+		if ok {
+			s = append(s, srv)
+		}
+	}
+	return s
+}
 
-	var t TotalLine
-	t.Count = 1
+func tagPage(w http.ResponseWriter, req *http.Request) {
 
 	tagParm := strings.ToLower(req.PathValue("tag"))
 
@@ -331,17 +340,8 @@ func tagPage(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	servers.RLock()
-	s := make(SqlServerArray, len(tag.Servers))
-	i := 0
-	for key := range tag.Servers {
-		s[i] = servers.Servers[key].SqlServer
-		i++
-	}
-	servers.RUnlock()
-	//s := servers.CloneAll()
-	// Get the totals
-	t = s.getTotal()
+	s := cloneServersByTag(tag)
+	t := s.getTotal()
 
 	context := Context{
 		Title:       fmt.Sprintf("tag: %s - IsItSQL", tagParm),

@@ -44,7 +44,7 @@ type AppConfig struct {
 	UsageReporting        bool               `json:"usageReporting"`
 	MetricHost            string             `json:"metricHost"`
 	AdminDomainGroup      string             `json:"adminDomainGroup"`
-	HomePageURL           string             `json:"homePageURL"`
+	HomePageTag           string             `json:"homePageTag"`
 	SessionKey            string             `json:"sessionKey"`
 	AGAlertMB             int64              `json:"ag_alert_mb"`
 	AGWarnMB              int64              `json:"ag_warn_mb"`
@@ -99,7 +99,6 @@ func ReadConfig() (AppConfig, error) {
 	a.ErrorReporting = false
 	a.UsageReporting = false
 	a.MetricHost = "metrics.isitsql.com"
-	a.HomePageURL = "/"
 
 	wd, err := osext.ExecutableFolder()
 	if err != nil {

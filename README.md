@@ -25,6 +25,10 @@ Please see the [Documentation](static/docs/README.md) for more details.
 
 ## What's New
 
+### vNext
+* Replaced the Home Page URL with a Home Page Tag section.  This should give cleaner URLs and be more intuitive.  In the Settings page, you can choose which tag is displayed on the home page.
+* Added an `/all` page that shows all servers
+
 ### 2.6 (January 2026)
 * Rename the Server Information Page as the Server About page and move the tab to the end
 * Improve MarkDown formatting in the Server About page ([@Kai78](https://github.com/scalesql/isitsql/pull/6))

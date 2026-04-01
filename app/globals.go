@@ -16,7 +16,7 @@ type appConfig struct {
 	EnableStatsviz        bool
 	FullBackupAlertHours  int
 	LogBackupAlertMinutes int
-	HomePageURL           string
+	HomePageTag           string // tag that populates the home page
 	AGAlertMB             int64
 	AGWarnMB              int64
 	Debug                 bool

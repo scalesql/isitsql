@@ -24,7 +24,7 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 		SecurityPolicy   settings.SecurityPolicyType
 		BackupHours      int
 		LogBackupMinutes int
-		HomePageURL      string
+		HomePageTag      string
 		AdminDomainGroup string
 		// Profiling bool
 	}{
@@ -102,11 +102,8 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 		}
 		s.Port = port
 
-		homePageURL := strings.TrimSpace(r.PostFormValue("homePage"))
-		if homePageURL == "" {
-			homePageURL = "/"
-		}
-		s.HomePageURL = homePageURL
+		homePageTag := strings.TrimSpace(r.PostFormValue("homePageTag"))
+		s.HomePageTag = homePageTag
 
 		// Backup alert
 		backupHours, err = strconv.Atoi(r.PostFormValue("backupHours"))
@@ -161,7 +158,7 @@ func settingsPage(w http.ResponseWriter, r *http.Request) {
 			context.Message = err.Error()
 		}
 		globalConfig.Lock()
-		globalConfig.AppConfig.HomePageURL = s.HomePageURL
+		globalConfig.AppConfig.HomePageTag = s.HomePageTag
 		globalConfig.Unlock()
 	}
 RenderForm:
@@ -171,7 +168,7 @@ RenderForm:
 	context.SecurityPolicy = s.SecurityPolicy
 	context.BackupHours = s.BackupAlertHours
 	context.LogBackupMinutes = s.LogBackupAlertMinutes
-	context.HomePageURL = s.HomePageURL
+	context.HomePageTag = s.HomePageTag
 	context.AdminDomainGroup = s.AdminDomainGroup
 
 	renderFSDynamic(w, "settings", context)

@@ -287,7 +287,7 @@ func setupAsync() error {
 	globalConfig.AppConfig.EnableStatsviz = s.EnableStatsviz
 	globalConfig.AppConfig.FullBackupAlertHours = s.BackupAlertHours
 	globalConfig.AppConfig.LogBackupAlertMinutes = s.LogBackupAlertMinutes
-	globalConfig.AppConfig.HomePageURL = s.HomePageURL
+	globalConfig.AppConfig.HomePageTag = s.HomePageTag
 	globalConfig.AppConfig.AGAlertMB = s.AGAlertMB
 	globalConfig.AppConfig.AGWarnMB = s.AGWarnMB
 	globalConfig.AppConfig.Debug = s.Debug

@@ -19,7 +19,7 @@
 
   <nav class="navbar fixed-top navbar-expand-md navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{{ .AppConfig.HomePageURL }}">Is It SQL</a>
+    <a class="navbar-brand" href="/">Is It SQL</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -27,8 +27,8 @@
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <!-- <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Home</a></li> -->
         <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
-        {{ if ne .AppConfig.HomePageURL "/" }}
-          <li class="nav-item"><a class="nav-link" href="/">All Servers</a></li>
+        {{ if ne .AppConfig.HomePageTag "" }}
+          <li class="nav-item"><a class="nav-link" href="/all">All Servers</a></li>
         {{ end }}
 
         <li class="nav-item dropdown">
@@ -36,7 +36,7 @@
             Tags {{ if .SelectedTag }}<strong>({{ .SelectedTag }})</strong> {{ end }} <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="/">All Servers</a></li>
+            <li><a class="dropdown-item" href="/all">All Servers</a></li>
             <li><a class="dropdown-item" href="/user-tags">User Tag Summary</a></li>
 
             <!-- System Tags -->

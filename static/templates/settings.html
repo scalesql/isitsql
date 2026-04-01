@@ -33,15 +33,13 @@
             </div>
 
             <div class="form-group mt-3">
-                <label for="homePage" class="col-sm-5 control-label">Home Page</label>
+                <label for="homePageTag" class="col-sm-5 control-label">Home Page Tag</label>
                 <div class="col-sm-3">
-                    <input type="string" class="form-control" id="homePage" placeholder="/" name="homePage" value="{{ .HomePageURL }}"  aria-describedby="helpBlock">
+                    <input type="string" class="form-control" id="homePageTag" placeholder="" name="homePageTag" value="{{ .HomePageTag }}"  aria-describedby="helpBlock">
                 </div>
                 <div class="col-sm-7 col-sm-offset-5">
-                <small class="form-text text-muted">Relative URL of the home page.  
-                    The default is "/".  
-                    Commonly "/tag/your-tag" or some such.  
-                    Tags -> All Servers will list all the servers.</small>
+                    <small class="form-text text-muted">Tag that populates the home page.  
+                        If set, only servers with this tag will appear on the home page.</small>
                 </div>
             </div>
 
