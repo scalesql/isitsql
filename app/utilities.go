@@ -16,8 +16,6 @@ var _ = durationToMediumString
 func durationToMediumString(a, b time.Time) string {
 	if a.After(b) {
 		return "invalid"
-		// fmt.Println(a)
-		// fmt.Println(b)
 	}
 
 	up := b.Sub(a)
@@ -57,8 +55,6 @@ func durationToShortString(a, b time.Time) string {
 			return "now"
 		}
 		return "invalid"
-		// fmt.Println(a)
-		// fmt.Println(b)
 	}
 
 	up := b.Sub(a)
@@ -100,7 +96,7 @@ func getJSURL(file, fallback string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// WinLogln("Current Directory: " + dir)
+
 	dir = dir + "/static/js"
 	fullfile := filepath.Join(dir, file)
 	_, err = os.Stat(fullfile)

@@ -72,42 +72,36 @@ func (m *myservice) Execute(args []string, r <-chan svc.ChangeRequest, changes c
 
 loop:
 	//lint:ignore S1000 copied from GO
-	for {
-		select {
-		// case <-tick:
-		// 	beep()
-		// 	elog.Info(1, "beep")
-		case c := <-r:
-			switch c.Cmd {
-			case svc.Interrogate:
-				//elog.Info(1, "Received Interrogate...")
-				changes <- c.CurrentStatus
-				// Testing deadlock from https://code.google.com/p/winsvc/issues/detail?id=4
-				time.Sleep(100 * time.Millisecond)
-				changes <- c.CurrentStatus
-			case svc.Stop, svc.Shutdown:
+	for c := range r {
+		switch c.Cmd {
+		case svc.Interrogate:
+			//elog.Info(1, "Received Interrogate...")
+			changes <- c.CurrentStatus
+			// Testing deadlock from https://code.google.com/p/winsvc/issues/detail?id=4
+			time.Sleep(100 * time.Millisecond)
+			changes <- c.CurrentStatus
+		case svc.Stop, svc.Shutdown:
 
-				elog.Info(1, "Received Shutdown...")
-				logrus.Info("received shutdown")
+			elog.Info(1, "Received Shutdown...")
+			logrus.Info("received shutdown")
 
-				// stop all polling and save the details here
-				// Commented out until I find a better way to save cache files
-				// shutdown()
+			// stop all polling and save the details here
+			// Commented out until I find a better way to save cache files
+			// shutdown()
 
-				break loop
-			case svc.Pause:
-				WinLogln("Received Pause...")
-				elog.Info(1, "Received Pause...")
-				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
-				//tick = slowtick
-			case svc.Continue:
-				WinLogln("Received Continue...")
-				elog.Info(1, "Received Continue...")
-				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-				//tick = fasttick
-			default:
-				elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
-			}
+			break loop
+		case svc.Pause:
+			WinLogln("Received Pause...")
+			elog.Info(1, "Received Pause...")
+			changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
+			//tick = slowtick
+		case svc.Continue:
+			WinLogln("Received Continue...")
+			elog.Info(1, "Received Continue...")
+			changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+			//tick = fasttick
+		default:
+			elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 		}
 	}
 	changes <- svc.Status{State: svc.StopPending}
