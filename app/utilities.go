@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/kardianos/osext"
 )
+
+var _ = durationToMediumString
 
 //lint:ignore U1000 used by templates
 func durationToMediumString(a, b time.Time) string {
@@ -88,6 +91,8 @@ func durationToShortString(a, b time.Time) string {
 	return fmt.Sprintf("%ds", int(up.Seconds()))
 }
 
+var _ = getJSURL
+
 //lint:ignore U1000 used by templates
 func getJSURL(file, fallback string) (string, error) {
 
@@ -110,12 +115,9 @@ func getJSURL(file, fallback string) (string, error) {
 	return "/static/js/" + file, nil
 }
 
+var _ = arrayContainsString
+
 //lint:ignore U1000 used by templates
 func arrayContainsString(a []string, s string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(a, s)
 }
