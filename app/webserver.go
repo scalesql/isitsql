@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"os/user"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -20,7 +19,6 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/leekchan/gtf"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/appringlog"
@@ -1677,105 +1675,4 @@ func GoogleChart(w http.ResponseWriter, req *http.Request) {
 func JsonTest(w http.ResponseWriter, req *http.Request) {
 	context := Context{Title: "JSON Test"}
 	render(w, "json", context)
-}
-
-// This needs error handling!
-func render(w http.ResponseWriter, tmpl string, context Context) {
-	context.Static = STATIC_URL
-	wd, err := os.Executable()
-	if err != nil {
-		WinLogln(err)
-		renderErrorPage("Error", err.Error(), w)
-		return
-	}
-
-	tmpl_list := []string{filepath.Join(wd, "templates/base.html"),
-		filepath.Join(wd, fmt.Sprintf("templates/%s.html", tmpl))}
-
-	t, err := template.New("base.html").Funcs(gtf.GtfFuncMap).ParseFiles(tmpl_list...)
-	if err != nil {
-		WinLogf("template.new: %v", err)
-	}
-
-	// t = t.Funcs(gtf.GtfFuncMap)
-	err = t.ExecuteTemplate(w, "base.html", context)
-	if err != nil {
-		WinLogf("t.executetemplate: %v", err)
-	}
-}
-
-func renderFS(w http.ResponseWriter, tmpl string, context Context) {
-
-	globalConfig.RLock()
-	useLocal := globalConfig.AppConfig.UseLocalStatic
-	globalConfig.RUnlock()
-
-	context.Static = STATIC_URL
-
-	baseTemplateString, err := static.ReadFile(useLocal, "templates/base.html")
-	if err != nil {
-		WinLogln("FSString-base: ", err)
-		return
-	}
-
-	baseTemplate, err := template.New(tmpl).Funcs(gtf.GtfFuncMap).Funcs(gui.TemplateFuncs).Parse(baseTemplateString)
-	if err != nil {
-		WinLogln("template-base: ", err)
-		return
-	}
-
-	templateString, err := static.ReadFile(useLocal, fmt.Sprintf("templates/%s.html", tmpl))
-	if err != nil {
-		WinLogln("FSString-template: ", tmpl, err)
-		return
-	}
-	finalTemplate, err := template.Must(baseTemplate.Clone()).Parse(templateString)
-	if err != nil {
-		WinLogln("template-template: ", tmpl, err)
-		return
-	}
-
-	err = finalTemplate.ExecuteTemplate(w, tmpl, context)
-	if err != nil {
-		logrus.Errorf("template executing error: %s: %s: ", tmpl, err)
-	}
-
-}
-
-func renderFSDynamic(w http.ResponseWriter, tmpl string, c2 any) {
-	// TODO: cache all the templates
-	// https://stackoverflow.com/questions/50842389/parsing-multiple-templates-in-go
-
-	globalConfig.RLock()
-	useLocal := globalConfig.AppConfig.UseLocalStatic
-	globalConfig.RUnlock()
-
-	baseTemplateString, err := static.ReadFile(useLocal, "templates/base.html")
-	if err != nil {
-		WinLogln(errors.Wrap(err, "renderfsdynamic: static.readfile"))
-		return
-	}
-
-	baseTemplate, err := template.New(tmpl).Funcs(gtf.GtfFuncMap).Funcs(gui.TemplateFuncs).Parse(baseTemplateString)
-	if err != nil {
-		WinLogln("template-base: ", err)
-		return
-	}
-
-	templateString, err := static.ReadFile(useLocal, fmt.Sprintf("templates/%s.html", tmpl))
-	if err != nil {
-		WinLogln("FSString-template: ", tmpl, err)
-		return
-	}
-	finalTemplate, err := template.Must(baseTemplate.Clone()).Parse(templateString)
-	if err != nil {
-		WinLogln("template-template: ", tmpl, err)
-		return
-	}
-
-	err = finalTemplate.Execute(w, c2)
-	if err != nil {
-		logrus.Errorf("template executing error: %s: %s: ", tmpl, err)
-	}
-	//fmt.Printf("%v: %s: %s\n", useLocal, tmpl, time.Since(start))
 }
