@@ -21,6 +21,9 @@ func main() {
 			// regexp.MustCompile("http://httpbin\\.org/(|e.+)$"),
 			regexp.MustCompile("http://localhost.+"),
 		),
+		colly.DisallowedURLFilters(
+			regexp.MustCompile(`/debug/pprof/profile`),
+		),
 	)
 
 	// On every a element which has href attribute call callback
