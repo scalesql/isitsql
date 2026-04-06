@@ -2,12 +2,9 @@ package app
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 
-	"github.com/leekchan/gtf"
 	"github.com/scalesql/isitsql/internal/gui"
-	"github.com/scalesql/isitsql/static"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,54 +33,25 @@ func renderFS(w http.ResponseWriter, tmpl string, context Context) {
 }
 
 // renderFSDynamic renders a template with the passed data
-func renderFSDynamic(w http.ResponseWriter, tmpl string, data any) {
-	// TODO: cache all the templates
-	// https://stackoverflow.com/questions/50842389/parsing-multiple-templates-in-go
-
-	globalConfig.RLock()
-	useLocal := globalConfig.AppConfig.UseLocalStatic
-	globalConfig.RUnlock()
-
-	baseTemplateString, err := static.ReadFile(useLocal, "templates/base.html")
+func renderFSDynamic(w http.ResponseWriter, name string, data any) {
+	bb, err := gui.ExecuteTemplate(name, data)
 	if err != nil {
-		renderError(w, tmpl, wrap(err, "static.readfile: base.html"))
+		renderError(w, name, err)
 		return
 	}
-
-	baseTemplate, err := template.New(tmpl).Funcs(gtf.GtfFuncMap).Funcs(gui.TemplateFuncs).Parse(baseTemplateString)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, err = w.Write(bb)
 	if err != nil {
-		renderError(w, tmpl, wrap(err, "template.New: base.html"))
-		return
-	}
-
-	templateString, err := static.ReadFile(useLocal, fmt.Sprintf("templates/%s.html", tmpl))
-	if err != nil {
-		renderError(w, tmpl, wrapf(err, "static.readfile: %s", tmpl))
-		return
-	}
-	newt, err := baseTemplate.Clone()
-	if err != nil {
-		renderError(w, tmpl, wrap(err, "basetemplate.clone"))
-		return
-	}
-	//finalTemplate, err := template.Must(baseTemplate.Clone()).Parse(templateString)
-	finalTemplate, err := newt.Parse(templateString)
-	if err != nil {
-		renderError(w, tmpl, wrap(err, "newt.parse"))
-		return
-	}
-
-	err = finalTemplate.Execute(w, data)
-	if err != nil {
-		renderError(w, tmpl, wrap(err, "finaltemplate.execute"))
+		logrus.Error(wrap(err, "renderfsdynamic: w.write"))
 	}
 }
 
-// renderError shows a basic HTML page in case of a template error
+// renderError shows a basic HTML page for any template error
 func renderError(w http.ResponseWriter, name string, err error) {
 	WinLogErr(fmt.Errorf("template error: %s.html", name))
 	logrus.Error(wrap(err, name))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusInternalServerError)
 	_, werr := w.Write([]byte(errorPageHTML))
 	if werr != nil {
@@ -101,13 +69,5 @@ func wrap(err error, msg string) error {
 	if msg == "" {
 		return err
 	}
-	return fmt.Errorf("%s: %w", msg, err)
-}
-
-func wrapf(err error, format string, args ...any) error {
-	if format == "" {
-		return err
-	}
-	msg := fmt.Sprintf(format, args...)
 	return fmt.Errorf("%s: %w", msg, err)
 }

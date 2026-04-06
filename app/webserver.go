@@ -527,7 +527,7 @@ func infoPage(w http.ResponseWriter, req *http.Request) {
 
 func docsPage(w http.ResponseWriter, req *http.Request) {
 	var err error
-	context := struct {
+	pageData := struct {
 		Context
 		Profiler bool
 		Body     template.HTML
@@ -541,7 +541,7 @@ func docsPage(w http.ResponseWriter, req *http.Request) {
 			AppConfig:   getGlobalConfig(),
 		},
 	}
-	context.Body = "<p>Body</p>"
+	pageData.Body = "<p>Body</p>"
 	// if gui.UseLocal() {
 	// 	// read the local file system for the bytes
 	// } else {
@@ -582,12 +582,8 @@ func docsPage(w http.ResponseWriter, req *http.Request) {
 	bm := bluemonday.UGCPolicy()
 	bb := bm.SanitizeBytes(buf.Bytes())
 
-	context.Body = template.HTML(string(bb))
-	err = gui.ExecuteTemplates(w, context, "templates/base.html", "templates/docs.html")
-	if err != nil {
-		WinLogln(err)
-		logrus.Error(errors.Wrap(err, "docs.html"))
-	}
+	pageData.Body = template.HTML(string(bb))
+	renderFSDynamic(w, "docs", pageData)
 }
 
 func aboutPage(w http.ResponseWriter, req *http.Request) {
@@ -638,7 +634,7 @@ func aboutPage(w http.ResponseWriter, req *http.Request) {
 	m["Version: Commit"] = build.Commit()
 	m["Version: Built"] = build.Built().String()
 
-	context := struct {
+	pageData := struct {
 		Context
 		Values   map[string]string
 		Profiler bool
@@ -654,46 +650,8 @@ func aboutPage(w http.ResponseWriter, req *http.Request) {
 		Values: m,
 	}
 
-	// renderFSDynamic(w, "about", context)
-	err = gui.ExecuteTemplates(w, context, "templates/base.html", "templates/about.html")
-	if err != nil {
-		WinLogln(err)
-		logrus.Error(errors.Wrap(err, "about.html"))
-	}
+	renderFSDynamic(w, "about", pageData)
 }
-
-// func aboutPage(w http.ResponseWriter, req *http.Request) {
-
-// 	context := struct {
-// 		Context
-// 	}{
-// 		Context: Context{
-// 			Title:       "About",
-// 			UnixNow:     time.Now().Unix() * 1000,
-// 			ErrorList:   getServerErrorList(),
-// 			HeaderRight: fmt.Sprintf("Refreshed: %s (%s)", time.Now().Format("15:04:05"), version),
-// 			AppConfig:   getGlobalConfig(),
-// 		},
-// 	}
-// 	renderFSDynamic(w, "about", context)
-// }
-
-// func panicApp(w http.ResponseWriter, req *http.Request) {
-// 	panic("OMG Panic!")
-// }
-
-// func racePage(w http.ResponseWriter, req *http.Request) {
-// 	var wg sync.WaitGroup
-// 	wg.Add(5)
-// 	for i := 0; i < 5; i++ {
-// 		go func() {
-// 			//lint:ignore
-// 			fmt.Println(i) // Not the 'i' you are looking for.
-// 			wg.Done()
-// 		}()
-// 	}
-// 	wg.Wait()
-// }
 
 func getServerErrorList() PageAlerts {
 	pa := PageAlerts{

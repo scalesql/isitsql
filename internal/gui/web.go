@@ -1,18 +1,21 @@
 package gui
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
-	"io"
-	"path/filepath"
 	"sync"
 
-	"github.com/scalesql/isitsql/static"
 	"github.com/leekchan/gtf"
+	"github.com/scalesql/isitsql/static"
+	"github.com/sirupsen/logrus"
 )
 
-// mux protects the local variable
+// mux protects the package variables
 var mux sync.RWMutex
+
+// templates holds the parsed templates
+var templates = make(map[string]*template.Template)
 
 // useLocalTemplates indicates whether to use the file system
 // or the embedded file system. The default is false
@@ -33,38 +36,73 @@ func UseLocal() bool {
 	return useLocalTemplates
 }
 
-// Execute parses and executes a template.  It takes a variable number
-// of templates which probably includes a base, content and any other
-// shared templates.
-func ExecuteTemplates(w io.Writer, data any, names ...string) error {
-	tmpl, err := parseTemplates(names...)
-	if err != nil {
-		return err
+// ExecuteTemplate parses and executes the named template.  It also parses
+// the "base" template.  It uses a cached template if one exists.
+func ExecuteTemplate(name string, data any) ([]byte, error) {
+	var t *template.Template
+	var ok bool
+	var err error
+
+	mux.RLock()
+	t, ok = templates[name]
+	useLocal := useLocalTemplates
+	mux.RUnlock()
+	// if there is no cached template or we are using local templates, parse
+	if !ok || useLocal {
+		t, err = parseTemplate(name)
+		if err != nil {
+			return []byte{}, wrap(err, "parsetemplate")
+		}
+		mux.Lock()
+		templates[name] = t
+		mux.Unlock()
 	}
-	return tmpl.Execute(w, data)
+	var buf bytes.Buffer
+	err = t.Execute(&buf, data)
+	if err != nil {
+		return []byte{}, wrap(err, "t.execute")
+	}
+	return buf.Bytes(), nil
 }
 
-// parseTemplates parses template files from the local file system
-// or the embedded file system.
-func parseTemplates(names ...string) (*template.Template, error) {
-	if len(names) == 0 {
-		return nil, fmt.Errorf("no template files")
+// parseTemplate parses the base template and the named template.
+func parseTemplate(name string) (*template.Template, error) {
+	logrus.Tracef("parsing: %s", name)
+	mux.RLock()
+	useLocal := useLocalTemplates
+	mux.RUnlock()
+	str, err := static.ReadFile(useLocal, "templates/base.html")
+	if err != nil {
+		return nil, wrap(err, "static.readfile: base.html")
 	}
-	// The template needs an actual name.  Just use the first one.
-	firstName := filepath.Base(names[0])
-	local := UseLocal()
-	// local needs "static" prepended to the path of each template file
-	if local {
-		newNames := make([]string, 0, len(names))
-		for _, str := range names {
-			newNames = append(newNames, filepath.ToSlash(filepath.Join("static", str)))
-		}
 
-		t, err := template.New(firstName).Funcs(gtf.GtfFuncMap).Funcs(TemplateFuncs).ParseFiles(newNames...)
-		if err != nil {
-			return nil, err
-		}
-		return t, nil
+	base, err := template.New(name).Funcs(gtf.GtfFuncMap).Funcs(TemplateFuncs).Parse(str)
+	if err != nil {
+		return nil, wrap(err, "template.New: base.html")
 	}
-	return template.New(firstName).Funcs(gtf.GtfFuncMap).Funcs(TemplateFuncs).ParseFS(static.FS(), names...)
+
+	str, err = static.ReadFile(useLocal, fmt.Sprintf("templates/%s.html", name))
+	if err != nil {
+		return nil, wrapf(err, "static.readfile: %s", name)
+	}
+	final, err := base.Parse(str)
+	if err != nil {
+		return nil, wrap(err, "base.parse")
+	}
+	return final, nil
+}
+
+func wrap(err error, msg string) error {
+	if msg == "" {
+		return err
+	}
+	return fmt.Errorf("%s: %w", msg, err)
+}
+
+func wrapf(err error, format string, args ...any) error {
+	if format == "" {
+		return err
+	}
+	msg := fmt.Sprintf(format, args...)
+	return fmt.Errorf("%s: %w", msg, err)
 }

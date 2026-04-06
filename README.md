@@ -26,8 +26,10 @@ Please see the [Documentation](static/docs/README.md) for more details.
 ## What's New
 
 ### vNext
-* Replaced the Home Page URL with a Home Page Tag section.  This should give cleaner URLs and be more intuitive.  In the Settings page, you can choose which tag is displayed on the home page.
+* Replaced the Home Page URL with a Home Page Tag field.  This should give cleaner URLs and be more intuitive.  In the Settings page, you can choose which tag is displayed on the home page.
 * Added an `/all` page that shows all servers
+* HTML templates are cached after parsing
+* Various clean up to modernize the code base
 
 ### 2.6 (January 2026)
 * Rename the Server Information Page as the Server About page and move the tab to the end
