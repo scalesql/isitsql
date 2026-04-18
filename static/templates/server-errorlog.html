@@ -1,0 +1,123 @@
+{{ define "head" }}
+<script type='text/javascript' src='/static/js/jquery-3.7.1.min.js'></script>
+
+<script type='text/javascript' src='/static/js/jquery.tablesorter.min.js'></script>
+<script type='text/javascript' src='/static/js/jquery.tablesorter.widgets.min.js'></script>
+
+{{ end }}
+{{ define "menu-line-2" }}{{ end }}
+
+{{ define "content" }}
+
+<script type="text/javascript">
+    $(function(){
+        $("#error-log").tablesorter({
+            widgets: ["saveSort"],
+            dateFormat: "uk"
+        });
+    });
+</script>
+
+{{ if .OneServer }}
+    <div class="row">
+        <div class="col-md-6">
+            <h1 title="{{ .OneServer.ServerName }}">{{ .OneServer.DisplayName }}{{ if  ne .OneServer.DisplayName .OneServer.ServerName }}<span style="color:darkgray; vertical-align: baseline; font-size: 75%;"> ({{ .OneServer.ServerName }})</span>{{ end }} <a href="/settings/servers/edit/{{ .OneServer.MapKey }}" title="Edit server settings">
+            <img src="/static/icons/gear-fill.svg" alt="Edit" style="vertical-align: middle;" class="icon">
+            </a></h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+                    <p>
+                <strong>Version:</strong> {{ .OneServer.VersionString }} {{ .OneServer.ProductLevel }} {{ .OneServer.ProductUpdateLevel }} ({{ .OneServer.ProductVersion }}); 
+                {{/* <strong>OS:</strong> {{ .OneServer.OSName }} ({{ .OneServer.OSArch }}) */}}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+
+            <p>
+            <strong>Cores: </strong>{{ .OneServer.CpuCount }} core{{ .OneServer.CpuCount | pluralize "s" }}; 
+             <strong>Memory:</strong> 
+                    Used: {{ .OneServer.SqlServerMemoryKB | kbtostring }} /
+                    {{ if .OneServer.MaxMemorySet }} Max:  {{ .OneServer.MaxMemoryKB | kbtostring }} / {{ end }}
+                    Physical: {{ .OneServer.PhysicalMemoryKB | kbtostring }}
+                    {{ $freepct := int64topct .OneServer.AvailableMemoryKB .OneServer.PhysicalMemoryKB }}
+              <strong>OS Free:</strong>   {{ .OneServer.AvailableMemoryKB | kbtostring }} ({{ printf "%.1f" $freepct}}%)
+            </p>
+        </div>
+        <div class="col-md-6">
+            {{ with .OneServer }}
+                {{ $seconds := divide       .DiskIODelta.SampleMS 1000 }}
+                {{ $readVolume := divide    .DiskIODelta.ReadBytes $seconds }}
+                {{ $readLatency := divide   .DiskIODelta.ReadStall .DiskIODelta.Reads }}
+                {{ $avgRead := divide       .DiskIODelta.ReadBytes .DiskIODelta.Reads}}
+                {{ $avgWrite := divide      .DiskIODelta.WriteBytes .DiskIODelta.Writes}}
+                {{ $writeVolume := divide   .DiskIODelta.WriteBytes $seconds }}
+                {{ $writeLatency := divide  .DiskIODelta.WriteStall .DiskIODelta.Writes }}
+                <p>
+                    <strong>Reads:</strong> {{ $readVolume | bytes }}/sec; <span style="color:darkgray;">{{ divide .DiskIODelta.Reads $seconds | comma }} iops;  {{ $readLatency }}ms</span>  
+                    <strong>Writes:</strong> {{ $writeVolume | bytes }}/sec; <span style="color:darkgray;">{{ divide .DiskIODelta.Writes $seconds | comma }} iops;  {{ $writeLatency }}ms</span>  
+                </p>
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+     
+            <h2>Error Log</h2>
+            <p>Filter: <input type="text" id="filter" name="filter"></p>
+            <table class="table" id="error-log">
+            <thead>
+                <tr>
+                    <!--<th>Name</th>-->
+                    <th style="text-align: center;">Row</th>
+                    <th style="text-align: center;" data-sorter="text">Date</th>
+                    <th>Process</th>
+                    <th>Text</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            {{ range .Rows }}
+                <tr>
+                    <td style="text-align: center;">{{ .RowNumber }}</td>
+                    <td style="white-space: nowrap; text-align: center;" data-text="{{ .LogDate.Format "2006-01-02T15:04:05" }}">{{ .LogDate.Format "2006-01-02 15:04:05" }}</td>
+                    <td>{{ .Process }}</td>
+                    <td>{{ .Text }}</td> 
+                </tr>
+            {{ end }}
+                    
+             </tbody>
+            </table>
+        </div>
+    </div>
+
+{{ else  }}
+
+<div class="row">
+        <div class="col-md-6">
+            <h1>Server Not Found</h1>
+        </div>
+        
+    </div>
+
+{{ end }}
+    
+
+   <script>
+    $(document).ready(function(){
+      $("#filter").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#error-log tbody > tr").filter(function() {
+          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+      });
+    });
+</script> 
+
+{{ end }}

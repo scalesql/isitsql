@@ -2,9 +2,12 @@ package app
 
 import (
 	"fmt"
+	"html"
 	"net/http"
+	"slices"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/docs"
 	"github.com/scalesql/isitsql/internal/hadr"
@@ -85,4 +88,75 @@ func ServerAboutPage(w http.ResponseWriter, req *http.Request) {
 	Page.Problems = problems
 	Page.Values = m
 	renderFSDynamic(w, "server-about", Page)
+}
+
+func ErrorLogPage(w http.ResponseWriter, req *http.Request) {
+
+	type ErrorLogRow struct {
+		RowNumber int
+		LogDate   time.Time `db:"LogDate"`
+		Process   string    `db:"ProcessInfo"`
+		Text      string    `db:"Text"`
+	}
+
+	var pageData struct {
+		Context
+		Rows []ErrorLogRow
+	}
+
+	pageData.Context = getContext("Server Not Found")
+	pageData.Context.ServerPageActiveTab = "errorlog"
+
+	server := req.PathValue("server")
+	servers.RLock()
+	wr, ok := servers.Servers[server]
+	servers.RUnlock()
+
+	if !ok {
+		renderErrorPage("Invalid Server", fmt.Sprintf("Server Not Found: %s", server), w)
+		return
+	}
+	s := wr.CloneSqlServer()
+	pageData.OneServer = &s
+
+	// read the error log
+	dbx := sqlx.NewDb(wr.DB, "mssql")
+	stmt := "EXECUTE sp_readerrorlog;"
+	rows := make([]ErrorLogRow, 100)
+	err := dbx.Select(&rows, stmt)
+	if err != nil {
+		//sessions = make([]*ActiveSession, 0)
+		WinLogln(fmt.Sprintf("Server Error Page: %v", err))
+		pageData.Context.Message = fmt.Sprintf("Server Error Page: %v", err)
+		pageData.Context.MessageClass = "alert-danger"
+	}
+	for i := 0; i < len(rows); i++ {
+		rows[i].RowNumber = i + 1
+	}
+	slices.Reverse(rows)
+
+	pageData.Rows = rows
+
+	var htmlTitle string
+	if len(s.FriendlyName) > 0 {
+		htmlTitle = html.EscapeString(s.FriendlyName)
+	}
+
+	if len(s.ServerName) > 0 {
+		if len(htmlTitle) > 0 {
+			htmlTitle += " (" + html.EscapeString(s.ServerName) + ")"
+		} else {
+			htmlTitle = html.EscapeString(s.ServerName)
+		}
+	}
+
+	if len(htmlTitle) > 0 {
+		htmlTitle += "-Error Log-Is It SQL"
+	} else {
+		htmlTitle = "Is It Sql"
+	}
+
+	pageData.Title = htmlTitle
+
+	renderFSDynamic(w, "server-errorlog", pageData)
 }
