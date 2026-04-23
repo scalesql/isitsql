@@ -31,6 +31,7 @@ Please see the [Documentation](static/docs/README.md) for more details.
 * HTML templates are cached after parsing
 * Various clean up to modernize the code base
 * Added a page to view the most recent SQL Server Error Log
+* Add the login name to the `/connections` page
 
 ### 2.6 (January 2026)
 * Rename the Server Information Page as the Server About page and move the tab to the end

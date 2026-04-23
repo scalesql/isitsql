@@ -42,6 +42,7 @@
             <th>Domain</th>
             <th>Server Name</th>
             <th style="text-align: center;" >Session</th>
+            <th>Login</th>
             <th>Transport</th>
             <th>Auth Scheme</th>
             <th style="text-align: center;" >Latency</th>
@@ -59,6 +60,7 @@
             <td>{{ .Domain }}</td>
             <td>{{ .ServerName }}</td>
             <td style="text-align: center;">{{ .Connection.SessionID }}</td>
+            <td>{{ .Connection.LoginName }}</td>
             <td>{{ .Connection.NetTransport }}</td>
             <td>{{ .Connection.AuthScheme}}</td>
             <td style="text-align: center;"  data-text="{{ .Connection.Latency.Nanoseconds }}">{{ .Connection.Latency }}</td>
