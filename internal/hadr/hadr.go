@@ -224,7 +224,7 @@ func GetAGList(db *sql.DB, serverName string) (map[string]*AG, error) {
 				agl.dns_name,
 				agl.[port],
 				agl.is_conformant,
-				agl.ip_configuration_string_from_cluster
+				COALESCE(agl.ip_configuration_string_from_cluster, '') AS ip_configuration_string_from_cluster
 			FROM	sys.availability_groups ag
 			JOIN	sys.availability_group_listeners  agl ON agl.group_id = ag.group_id
 			WHERE	ag.is_distributed = 0 

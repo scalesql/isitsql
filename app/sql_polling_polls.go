@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/diskio"
 	"github.com/scalesql/isitsql/internal/gui"
 	"github.com/scalesql/isitsql/internal/hadr"
-	"github.com/pkg/errors"
 )
 
 func (s *SqlServerWrapper) GetActiveSessions() ([]*ActiveSession, error) {
@@ -195,8 +195,9 @@ func (s *SqlServerWrapper) pollAG() error {
 
 	err = hadr.SetLatency(db)
 	if err != nil {
-		WinLogln("SetLantencies", err)
-		return errors.Wrap(err, "hadr.setlatencies")
+		msg := fmt.Sprintf("[%s] hadr.setlatency", sn)
+		WinLogln(msg, err)
+		return errors.Wrap(err, msg)
 	}
 
 	// poll the AG databases

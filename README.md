@@ -26,6 +26,8 @@ Please see the [Documentation](static/docs/README.md) for more details.
 ## What's New
 
 ### vNext
+* **Removed support for SQL Server 2014 Availability Groups**
+* Improved support for SQL Server running in Docker
 * Replaced the Home Page URL with a Home Page Tag field.  This should give cleaner URLs and be more intuitive.  In the Settings page, you can choose which tag is displayed on the home page.
 * Added an `/all` page that shows all servers
 * HTML templates are cached after parsing

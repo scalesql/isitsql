@@ -118,7 +118,7 @@ SELECT	ag.[name] AS ag_name,
 		COALESCE(agdb.suspend_reason_desc, '') AS suspend_reason_desc
 		,CAST(agdb.group_id AS NVARCHAR(128)) AS group_id
 		,CAST(agdb.replica_id AS NVARCHAR(128)) AS replica_id
-		,CAST(agdb.group_database_id AS NVARCHAR(128)) AS group_database_id
+		,COALESCE(CAST(agdb.group_database_id AS NVARCHAR(128)), '') AS group_database_id
 FROM	sys.dm_hadr_database_replica_states agdb
 JOIN	sys.availability_groups ag ON ag.group_id = agdb.group_id
 JOIN	sys.availability_replicas ar ON ar.group_id = agdb.group_id AND ar.replica_id = agdb.replica_id
@@ -145,7 +145,7 @@ UNION ALL
 		suspend_reason_desc = 'SUSPEND_X'
 		,group_id = '98597b24-da1d-4f05-80bc-ff050866d986'
 		,replica_id = CAST((select service_broker_guid FROM sys.databases WHERE [name] = 'tempdb') AS NVARCHAR(128))
-		,group_database_id = CAST((select service_broker_guid FROM sys.databases WHERE database_id = 2) AS NVARCHAR(128))
+		,group_database_id = COALESCE(CAST((select service_broker_guid FROM sys.databases WHERE database_id = 2) AS NVARCHAR(128)), 'ReplicaLine1')
 UNION ALL 
 	SELECT	
 		ag_name = 'AG-SQL2016', 
@@ -164,5 +164,5 @@ UNION ALL
 		suspend_reason_desc = 'SUSPEND_X'	
 		,group_id = '185D6848-C278-47E8-8A8F-049456161D46'
 		,replica_id = CAST((select service_broker_guid FROM sys.databases WHERE [name] = 'tempdb')AS NVARCHAR(128))
-		,group_database_id = CAST((select service_broker_guid FROM sys.databases WHERE database_id = 4)	 AS NVARCHAR(128))
+		,group_database_id = COALESCE(CAST((select service_broker_guid FROM sys.databases WHERE database_id = 4)	 AS NVARCHAR(128)), 'ReplicaLine2')
 		`

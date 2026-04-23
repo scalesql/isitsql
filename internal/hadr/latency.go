@@ -49,7 +49,7 @@ func SetLatency(db *sql.DB) error {
 var getLatencyStatement = `
 SELECT	CAST(group_id AS NVARCHAR(128)) as group_id
 		,CAST(replica_id AS NVARCHAR(128)) as replica_id
-		,CAST(group_database_id AS NVARCHAR(128)) as group_database_id
+		,COALESCE(CAST(group_database_id AS NVARCHAR(128)), '') as group_database_id
 		,COALESCE(log_send_queue_size, -1) AS log_send_queue_size
 		,COALESCE(redo_queue_size, -1) AS redo_queue_size
 		--,secondary_lag_seconds
@@ -61,14 +61,14 @@ var getLatencyStatementDEV = `
 UNION ALL
 SELECT	group_id = '98597b24-da1d-4f05-80bc-ff050866d986'
 		,CAST((select service_broker_guid FROM sys.databases WHERE [name] = 'tempdb') AS NVARCHAR(128)) as replica_id
-		,CAST((select service_broker_guid FROM sys.databases WHERE database_id = 2) AS NVARCHAR(128)) as group_database_id
+		,COALESCE(CAST((select service_broker_guid FROM sys.databases WHERE database_id = 2) AS NVARCHAR(128)), 'Line1') as group_database_id
 		,log_send_queue_size = 37
 		,redo_queue_size = -1
 		--,secondary_lag_seconds = 1
 UNION ALL
 SELECT	group_id = '98597b24-da1d-4f05-80bc-ff050866d986'
 		,CAST((select service_broker_guid FROM sys.databases WHERE [name] = 'tempdb') AS NVARCHAR(128)) as replica_id
-		,CAST((select service_broker_guid FROM sys.databases WHERE database_id = 4) AS NVARCHAR(128)) as group_database_id
+		,COALESCE(CAST((select service_broker_guid FROM sys.databases WHERE database_id = 4) AS NVARCHAR(128)), 'Line2') as group_database_id
 		,log_send_queue_size = 19
 		,redo_queue_size = 12345634
 		--,secondary_lag_seconds = 9 
