@@ -13,6 +13,7 @@ $flags += "-X '$path.versionFlag=0.1'"
 $flagParameters = $flags -Join " "
 Write-Output "Building..."
 go build -tags dev -ldflags "$($flagParameters)" -trimpath ./cmd/isitsql
+# go build  -ldflags "$($flagParameters)" -trimpath ./cmd/isitsql
 if ($LastExitCode -ne 0) {
     exit
 }
