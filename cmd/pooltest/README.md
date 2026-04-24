@@ -5,11 +5,14 @@ This app tests connection pooling and failover for load balancers moving SQL Ser
 
 Parameters
 ----------
-* -s server/host to connect
-* -p port -- defaults to 1433
-* -ping-first (bool) --defaults to false
-* -conn-life (defaults to 1m)
-* -interval (defaults to 1s)
+* `-server server` -- only the host part
+* `-instance instance` -- only the optional instance part
+* `-port port` -- defaults to 1433
+* `-ping` --defaults to false. Lookup the IP address of the server.  If it has changed, created a new connection pool.
+* `-life duration` -- lifetime of the connection in the pool.  Defaults to 1m.
+* `-interval duration` -- how often to poll. Defaults to 1s.
+* `-msf` -- enable multisubnet failover
+* `-protocol protocol` --force a protocol (tcp|np|lpc)
 
 Logic
 -----

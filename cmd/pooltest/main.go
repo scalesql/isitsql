@@ -24,14 +24,26 @@ import (
 type pollResult struct {
 	ServerName   string
 	AuthMethod   string
+	Protocol     string
 	ConnStart    time.Time
 	SPID         int
 	ConnectionID string
 }
 
+type poolTestConfig struct {
+	Server    string
+	Port      int
+	Instance  string
+	PingFirst bool
+	ConnLife  time.Duration
+	Interval  time.Duration
+	MSF       bool
+	Protocol  string
+}
+
 func (r pollResult) String() string {
-	return fmt.Sprintf("server=%s  auth=%s  conn_start=%s  spid=%d  conn_id=%s",
-		r.ServerName, r.AuthMethod,
+	return fmt.Sprintf("server=%s  auth=%s (%s)  conn_start=%s  spid=%d (%s)",
+		r.ServerName, r.AuthMethod, r.Protocol,
 		r.ConnStart.Format("15:04:05"),
 		r.SPID,
 		r.ConnectionID,
@@ -39,33 +51,28 @@ func (r pollResult) String() string {
 }
 
 func main() {
-	var (
-		server    string
-		port      int
-		pingFirst bool
-		connLife  time.Duration
-		interval  time.Duration
-		msf       bool
-	)
+	cfg := poolTestConfig{}
 
-	flag.StringVar(&server, "s", "", "server/host to connect")
-	flag.IntVar(&port, "p", 1433, "port")
-	flag.BoolVar(&pingFirst, "ping-first", false, "ping the host first to detect IP changes")
-	flag.DurationVar(&connLife, "conn-life", 1*time.Minute, "connection max lifetime")
-	flag.DurationVar(&interval, "interval", 1*time.Second, "polling interval")
-	flag.BoolVar(&msf, "msf", false, "enable MultiSubnetFailover in connection string")
+	flag.StringVar(&cfg.Server, "server", "", "server/host to connect")
+	flag.IntVar(&cfg.Port, "port", 1433, "port")
+	flag.StringVar(&cfg.Instance, "instance", "", "SQL Server instance name (used as URL path)")
+	flag.BoolVar(&cfg.PingFirst, "ping", false, "ping the host first to detect IP changes")
+	flag.DurationVar(&cfg.ConnLife, "life", 1*time.Minute, "connection max lifetime")
+	flag.DurationVar(&cfg.Interval, "interval", 1*time.Second, "polling interval")
+	flag.BoolVar(&cfg.MSF, "msf", false, "enable MultiSubnetFailover in connection string")
+	flag.StringVar(&cfg.Protocol, "protocol", "", "connection protocol (tcp|np|lpc)")
 	flag.Parse()
 
-	if server == "" {
+	if cfg.Server == "" {
 		fmt.Println("Error: -s (server) is required")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	logf("Starting pool test: server=%s port=%d ping-first=%v conn-life=%v interval=%v msf=%v",
-		server, port, pingFirst, connLife, interval, msf)
+	logf("Starting pool test: server=%s port=%d instance=%s ping-first=%v conn-life=%v interval=%v msf=%v",
+		cfg.Server, cfg.Port, cfg.Instance, cfg.PingFirst, cfg.ConnLife, cfg.Interval, cfg.MSF)
 
-	db, err := openPool(server, port, connLife, msf)
+	db, err := openPool(cfg)
 	if err != nil {
 		logf("FATAL: failed to open connection pool: %v", err)
 		os.Exit(1)
@@ -89,8 +96,8 @@ func main() {
 	var lastIPs []string
 
 	// Resolve and log the initial IPs
-	if pingFirst {
-		ips, err := net.DefaultResolver.LookupHost(ctx, server)
+	if cfg.PingFirst {
+		ips, err := net.DefaultResolver.LookupHost(ctx, cfg.Server)
 		if err != nil {
 			logf("WARNING: initial DNS lookup failed: %v", err)
 		} else {
@@ -100,7 +107,7 @@ func main() {
 		}
 	}
 
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(cfg.Interval)
 	defer ticker.Stop()
 
 	// Run immediately on start, then on each tick
@@ -112,8 +119,8 @@ func main() {
 			logf("Shutting down...")
 			return
 		case <-ticker.C:
-			if pingFirst {
-				db, lastIPs = checkDNS(ctx, server, port, connLife, msf, db, lastIPs)
+			if cfg.PingFirst {
+				db, lastIPs = checkDNS(ctx, cfg, db, lastIPs)
 			}
 			poll(ctx, db, &lastResult)
 		}
@@ -121,37 +128,44 @@ func main() {
 }
 
 // openPool creates a new *sql.DB connection pool to the given server.
-func openPool(server string, port int, connLife time.Duration, msf bool) (*sql.DB, error) {
+func openPool(cfg poolTestConfig) (*sql.DB, error) {
 
 	query := url.Values{}
 	query.Add("app name", "pooltest.exe")
-	if msf {
+	if cfg.MSF {
 		query.Add("multisubnetfailover", "true")
+	}
+	if cfg.Protocol != "" {
+		query.Add("protocol", cfg.Protocol)
 	}
 
 	u := &url.URL{
 		Scheme: "sqlserver",
 		// User:   url.UserPassword(username, password),
-		Host: server,
-		// Path:  instance, // if connecting to an instance instead of a port
+		Host:     cfg.Server,
 		RawQuery: query.Encode(),
 	}
-	if port != 0 && port != 1433 {
-		u.Host += fmt.Sprintf(":%d", port)
+	if cfg.Instance != "" {
+		u.Path = cfg.Instance
 	}
+	if cfg.Port != 0 && cfg.Port != 1433 {
+		u.Host += fmt.Sprintf(":%d", cfg.Port)
+	}
+
 	connStr := u.String()
 	logf("Connection string: %s", connStr)
+
 	db, err := sql.Open("sqlserver", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("sql.Open: %w", err)
 	}
-	db.SetConnMaxLifetime(connLife)
+	db.SetConnMaxLifetime(cfg.ConnLife)
 	return db, nil
 }
 
 // checkDNS resolves the host IPs and rebuilds the pool if they changed.
-func checkDNS(ctx context.Context, server string, port int, connLife time.Duration, msf bool, db *sql.DB, lastIPs []string) (*sql.DB, []string) {
-	ips, err := net.DefaultResolver.LookupHost(ctx, server)
+func checkDNS(ctx context.Context, cfg poolTestConfig, db *sql.DB, lastIPs []string) (*sql.DB, []string) {
+	ips, err := net.DefaultResolver.LookupHost(ctx, cfg.Server)
 	if err != nil {
 		logf("ERROR: DNS lookup failed: %v", err)
 		return db, lastIPs
@@ -162,7 +176,7 @@ func checkDNS(ctx context.Context, server string, port int, connLife time.Durati
 		logf("DNS change detected: %v -> %v", lastIPs, ips)
 		logf("Rebuilding connection pool")
 		db.Close()
-		newDB, err := openPool(server, port, connLife, msf)
+		newDB, err := openPool(cfg)
 		if err != nil {
 			logf("ERROR: failed to rebuild pool: %v", err)
 			// Return old (closed) db; next poll will surface the error
@@ -183,6 +197,7 @@ func poll(ctx context.Context, db *sql.DB, last *pollResult) {
 		SELECT 
 			@@SERVERNAME AS ServerName,
 			CONVERT(VARCHAR(100), CONNECTIONPROPERTY('auth_scheme')) AS AuthMethod,
+			CONVERT(VARCHAR(20), c.net_transport) AS Protocol,
 			c.connect_time AS ConnStart,
 			@@SPID AS SPID,
 			CONVERT(VARCHAR(36), c.connection_id) AS ConnectionID
@@ -192,6 +207,7 @@ func poll(ctx context.Context, db *sql.DB, last *pollResult) {
 	`).Scan(
 		&result.ServerName,
 		&result.AuthMethod,
+		&result.Protocol,
 		&result.ConnStart,
 		&result.SPID,
 		&result.ConnectionID,

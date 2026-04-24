@@ -77,6 +77,14 @@ if ($LastExitCode -ne 0) {
     exit
 }
 
+Write-Output "Building pooltest.exe..."
+go build -a -o "$($target)\optional\pooltest.exe" ./cmd/pooltest
+if ($LastExitCode -ne 0) {
+    exit
+}
+blackfriday-tool -css .\static\docs\style.css -embed .\cmd\pooltest\README.md    ".\deploy\isitsql\optional\pooltest.html"
+
+
 Write-Output "" 
 Write-Output "isitsql.exe -version..."
 & "$($target)\isitsql.exe" -version
