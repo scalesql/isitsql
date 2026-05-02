@@ -47,12 +47,11 @@
             {{ $maxError := or .ErrorNumber .Severity .State }}
             <tr>
             <td style="text-align: center; white-space: nowrap;" title="{{ .TimeStamp | utctolocal }}" data-text="{{ .TimeStamp | timetoYMDT }}">{{ .TimeStamp | xeSessionTime }}</td>
-            <td style="text-align: center;">{{ .EventName }} {{ if $maxError }}{{.ErrorNumber}}:{{.Severity}}:{{.State}}{{end }}</td>
-            <td style="text-align: left;" title="Host: {{ .HostName }}  App: {{ .AppName }}">{{ .UserName }}</td>
+            <td style="text-align: center;">{{ .EventName }}</td>
+            <td style="text-align: left;" title="client={{ .HostName }}{{ if .DatabaseName}}  db={{ .DatabaseName }}{{end}}  app={{ .AppName }}">{{ .UserName }}</td>
             <!--<td style="text-align: center;" title="Severity: {{ .Severity }} State: {{ .State }}"> {{ .ErrorNumber }} </td>-->
-            <td style="text-align: left;" title="{{ .Message }}"> {{ .Message | leftstring200 }} </td>
-            <td style="text-align: left; word-wrap: break-word; " title="{{ .SQLText }}"> {{ .SQLText | leftstring200 }} </td>
-
+            <td style="text-align: left;" title="{{ .Message }}">{{ if $maxError }}(Msg {{.ErrorNumber}}, Level {{.Severity}}, State {{.State}}) {{end }}{{ .Message | leftstring200 }} </td>
+            <td style="text-align: left; word-wrap: break-word; " title="{{ .SQLText }}"> {{ .SQLText | leftstring300 }} </td>
             </tr>
         {{ end}}
                 
@@ -74,33 +73,33 @@
 
 {{ if not .Events }}
 
-    <p>No events found or the session doesn't exist.</p>
+    <p>No events found or no sessions exist.  All events from sessions starting with "isitsql_" that write to ring buffers will be listed here.  We suggest the session below.</p>
     <p>
         &nbsp;
     </p>
     <pre><code>
-IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-    ALTER EVENT SESSION ErrorSession ON SERVER STATE = STOP
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+    ALTER EVENT SESSION isitsql_errors ON SERVER STATE = STOP
 
-IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-    DROP EVENT SESSION ErrorSession ON SERVER 
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+    DROP EVENT SESSION isitsql_errors ON SERVER 
 
-CREATE EVENT SESSION ErrorSession ON SERVER 
+CREATE EVENT SESSION isitsql_errors ON SERVER 
     ADD EVENT sqlserver.error_reported            
     -- collect failed SQL statement, the SQL stack that led to the error, 
     -- the database id in which the error happened and the username that ran the statement 
     
     (
-        ACTION (sqlserver.sql_text, sqlserver.tsql_stack, sqlserver.database_id, 
-            sqlserver.username, sqlserver.client_app_name, sqlserver.client_hostname, package0.collect_system_time)
+        ACTION (sqlserver.sql_text, sqlserver.[database_name], 
+            sqlserver.server_principal_name, sqlserver.client_app_name, sqlserver.client_hostname, package0.collect_system_time)
         WHERE severity >= 14 and error_number <> 2557 and error_number <> 17830
     )  
     ADD TARGET package0.ring_buffer    
         (SET max_memory = 1024)
-WITH (max_dispatch_latency = 1 seconds, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, STARTUP_STATE = ON)
+WITH (max_dispatch_latency = 5 seconds, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, STARTUP_STATE = ON)
 
-IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-    ALTER EVENT SESSION ErrorSession ON SERVER STATE = START
+IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+    ALTER EVENT SESSION isitsql_errors ON SERVER STATE = START
     </code></pre>
 {{ end }}
     

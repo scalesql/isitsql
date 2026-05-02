@@ -291,30 +291,30 @@ Tags is a comma separated list of tags. Obviously it needs to be enclosed in quo
 
 ## Extended Event Session
 
-Each server page looks for an Extended Event session named "ErrorSession". It expects a session holding SQL Server errors in a ring buffer. That session should be defined like this:
+Each server's Extended Event page lists events from all Extended Event sessions whose names start with `isitsql_` and write to ring buffers. It has been tested with sessions capturing `error_reported` but not much more.  We suugest the session below.
 
-    IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-      ALTER EVENT SESSION ErrorSession ON SERVER STATE = STOP
+    IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+        ALTER EVENT SESSION isitsql_errors ON SERVER STATE = STOP
 
-    IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-      DROP EVENT SESSION ErrorSession ON SERVER 
+    IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+        DROP EVENT SESSION isitsql_errors ON SERVER 
 
-    CREATE EVENT SESSION ErrorSession ON SERVER 
-      ADD EVENT sqlserver.error_reported            
-      -- collect failed SQL statement, the SQL stack that led to the error, 
-      -- the database id in which the error happened and the username that ran the statement 
+    CREATE EVENT SESSION isitsql_errors ON SERVER 
+        ADD EVENT sqlserver.error_reported            
+        -- collect failed SQL statement, the SQL stack that led to the error, 
+        -- the database id in which the error happened and the username that ran the statement 
+        
+        (
+            ACTION (sqlserver.sql_text, sqlserver.[database_name], 
+                sqlserver.server_principal_name, sqlserver.client_app_name, sqlserver.client_hostname, package0.collect_system_time)
+            WHERE severity >= 14 and error_number <> 2557 and error_number <> 17830
+        )  
+        ADD TARGET package0.ring_buffer    
+            (SET max_memory = 1024)
+    WITH (max_dispatch_latency = 5 seconds, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, STARTUP_STATE = ON)
 
-      (
-          ACTION (sqlserver.sql_text, sqlserver.tsql_stack, sqlserver.database_id, 
-        sqlserver.username, sqlserver.client_app_name, sqlserver.client_hostname, package0.collect_system_time)
-          WHERE severity >= 14 and error_number <> 2557 and error_number <> 17830
-      )  
-      ADD TARGET package0.ring_buffer    
-          (SET max_memory = 1024)
-    WITH (max_dispatch_latency = 1 seconds, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, STARTUP_STATE = ON)
-
-    IF EXISTS (select * from sys.server_event_sessions where [name] = 'ErrorSession')
-      ALTER EVENT SESSION ErrorSession ON SERVER STATE = START
+    IF EXISTS (select * from sys.server_event_sessions where [name] = 'isitsql_errors')
+        ALTER EVENT SESSION isitsql_errors ON SERVER STATE = START
 
 <a id="repository"></a>
 

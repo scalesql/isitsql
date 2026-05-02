@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/scalesql/isitsql/internal/mssql"
 	"github.com/scalesql/isitsql/internal/mssql/session"
-	"github.com/dustin/go-humanize"
 )
 
 // TemplateFuncs is used by the HTML templates for
@@ -53,11 +53,18 @@ var TemplateFuncs = template.FuncMap{
 	},
 
 	"leftstring200": func(s string) string {
-		s2 := strings.Replace(s, ",", ", ", -1)
+		s2 := strings.ReplaceAll(s, ",", ", ")
 		if len(s2) <= 200 {
 			return s2
 		}
 		return session.TrimSQL(s2, 200) + "..."
+	},
+	"leftstring300": func(s string) string {
+		s2 := strings.ReplaceAll(s, ",", ", ")
+		if len(s2) <= 300 {
+			return s2
+		}
+		return session.TrimSQL(s2, 300) + "..."
 	},
 	"comma": func(b int64) string {
 		return humanize.Comma(b)

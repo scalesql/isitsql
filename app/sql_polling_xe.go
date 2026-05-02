@@ -38,22 +38,23 @@ type sqlRingBuffer struct {
 type xeSession struct {
 	EventSessionAddress []byte
 	Name                string
-	TargetData          string
+	TargetData          []byte
 }
 
 type xEvent struct {
-	EventName   string
-	ErrorNumber int
-	TimeStamp   time.Time
-	UTCTime     time.Time
-	Message     string
-	Severity    int
-	State       int
-	HostName    string
-	AppName     string
-	UserName    string
-	SQLText     string
-	DatabaseID  int
+	EventName    string
+	ErrorNumber  int
+	TimeStamp    time.Time
+	UTCTime      time.Time
+	Message      string
+	Severity     int
+	State        int
+	HostName     string
+	AppName      string
+	UserName     string
+	SQLText      string
+	DatabaseID   int
+	DatabaseName string
 }
 
 func (s *SqlServerWrapper) getXESessions() ([]*xEvent, error) {
@@ -93,7 +94,7 @@ func (s *SqlServerWrapper) getXESessions() ([]*xEvent, error) {
 
 		v := sqlRingBuffer{EventCount: -2}
 
-		err = xml.Unmarshal([]byte(xe.TargetData), &v)
+		err = xml.Unmarshal(xe.TargetData, &v)
 		if err != nil {
 			return nil, err
 		}
@@ -145,11 +146,15 @@ func (s *SqlServerWrapper) getXESessions() ([]*xEvent, error) {
 				case "client_app_name":
 					e.AppName = a.Value
 
-				case "username":
+				case "username": // legacy value
+					e.UserName = a.Value
+				case "server_principal_name":
 					e.UserName = a.Value
 
 				case "database_id":
 					e.DatabaseID, _ = strconv.Atoi(a.Value)
+				case "database_name": // new in 2.7
+					e.DatabaseName = a.Value
 				}
 			}
 
