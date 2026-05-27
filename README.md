@@ -21,7 +21,7 @@ This is designed to allow a moderately technical person to determine if SQL Serv
 * Show Database Mirroring status
 * Download all SQL Servers to CSV showing version, edition, etc.
 
-Please see the [Documentation](static/docs/README.md) for more details.
+Please see the [Documentation](static/docs/Docs.md) for more details.
 
 ## What's New
 

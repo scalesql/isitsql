@@ -18,8 +18,7 @@ _Note:_ If you enter a server using either a SQL Server login or custom connecti
 
 # Table of Contents
 
-1.  [What's New](#whatsnew)
-2.  [Required Permissions](#permissions)
+1.  [Required Permissions](#permissions)
 3.  [Running as a Service](#service)
 3.  [Settings](#settings)
 3.  [Features](#features)
@@ -31,132 +30,6 @@ _Note:_ If you enter a server using either a SQL Server login or custom connecti
 10. [Server Documentation](#docs)
 11. [Store Metrics in a SQL Server Database](#repository)
 11. [Previous Releases](#previous)
-
-<a id="whatsnew"></a>
-
-## What's New
-
-### 2.5 (August 2025) 
-* Option to store key server metrics in a SQL Server Database
-* Support protocols for connections such as "tcp:fqdn.com".  It supports "tcp", "np" (named pipes), and "lpc" (shared memory).  The default is "tcp".  The Server Information page has a link to the Server Connection page that will show the connection details.
-* Upgraded jQuery and Bootstrap.  This no longer supports Internet Explorer.
-* Ignore distributed Availability Groups for now
-* Added an Outbound Connections page at `/connections` that shows the FQDN, @@SERVERNAME, protocol, and authorization scheme for all the SQL Server connections.
-* Improved Javascript error handling
-* Cleaned up nesting in the HTML templates
-
-### 2.3 (January 2025)
-* Added SQL Server Agent jobs.  The IsItSQL service account needs `db_datareader` and `SQLAgentReaderRole` in `msdb`.
-* Added Prometheus metrics.  See the About page for the link.
-* Reduced locking
-* Fixed issue with charts always in UTC
-* Updated GO version and all dependencies
-
-### 2.2 (October 2024)
-* Added Dynamic Waits
-* Clarified whether times were from the SQL Server or IsItSQL
-
-### 2.1 (February 2024)
-* Display server documentation.  Mardown documentation can be associated with each server and will be displayed in a `Docs` tab.  See the [Server Documentation](#docs) section for more information.
-* Capture the IP address of the server.  It does this using `sys.dm_tcp_listener_states` and `sys.dm_exec_connections`.  The IP address of each server is displayed on the `Docs` tab.  All IP addresses are displayed on Global -> IP Addresses page.
-
-
-### 2.0.4 (13 February 2024)
-* Reduce memory usage.  Legacy waits are only read off disk when requested.
-* Added `MEMORY_ALLOCATION_EXT` wait
-* Fixed display of the time since a snapshot was created
-* Standardized date displays on various pages
-
-
-### 2.0.3 (20 January 2024)
-* Servers can be listed in user editable files.  See the documentation in the `optional` folder.  This is hepful if you want IsItSQL running in multiple data centers sharing the same list of servers.
-* Support non-GUID server keys.  If you put the servers in a configuration file, you can have URLs like `/server/db-txn`. 
-* Added a Server Connection Detail page at `/server/:server_key/conn`
-* Improve reporting of `tempdb` size
-* Limit support for Availability Groups to SQL Server 2014 and higher
-* Added a Connection Test utility
-* The Server Detail page now shows the Windows version.  The SQL Server Versions page at `/versions` shows the operating system.  Downloading that page as CSV adds the architecture, install date, cores, and memory.
-* SQL Servers in containers ignore the "other" CPU percentage
-* Add a `/memory` page that shows OS memory, SQL Server memory and the amount free
-* Waits are now polled in real time and only waits on user sessions are displayed by default.  See the [Features](#features) section.
-* Switched from the ODBC driver to the native Microsoft GO driver to connect to SQL Server.
-* Date and time formatting are improved throughout the application
-* Improved the reporting of blocked sessions.  This should make it easier to identify the root cause of blocking.
-* More polling queries timeout if they get blocked.  This is mostly AG queries while adding or removing nodes or databases.
-
-### 1.7.14 (8 March 2023)
-* On the databases page,
-  * Hide the log backups if in SIMPLE recovery
-  * (BETA) Show the AG status, send log size, and redo log size for the database
-* Change various refresh intervals
-* Exclude PWAIT_EXTENSIBILITY_CLEANUP_TASK
-* Edit server list includes link to the stats
-* Most pages display the server name in gray next to the friendly name
-* Most pages have a filter on them
-* Added support for ODBC18 and prioritized the ODBC drivers
-* Support optional encryption attributeds on newer drivers
-* Updated to GO 1.19
-* On the AG page, add a link back to the primary node
-
-
-### 1.7.11 (18 August 2022)
-* Sort the Availability Group list consistently
-* Add SQL Server 2022 support
-* Improve support for SQL Server on Linux
-* Ensure log directory is created
-* Better error handling in various web pages
-
-
-### 1.7.9 (2 August 2022)
-* Bug fix for SQL Server 2008 Activity page
-* Add Availability Group display names.  See [Features](#features) below.
-
-### 1.7.6 (28 July 2022)
-* Add support for newer ODBC drivers
-* Better line ending on Windows for the log file
-* Support `ignoredBackups.csv` or `ignoredBackups.txt`
-* AG page displays Listener names instead of AG names
-* Improve clean up for the NDJSON files that cache metrics
-
-### 1.7.2 (28 June 2022)
-* Update to latest ODBC drivers
-* Activity query shows orphaned sessions that are blocking
-
-### 1.7 (8 May 2022)
-
-* Save the last hour of performance data on restart.  These files are stored in the `cache` directory.
-* The log is a little more human readable.  It supports both debug and trace log levels that can be set in the settings file.
-* Purging old log files actually purges the files
-* Changed the `tags` menu so that the submenus are at the top
-* Waits now show a a per minute value.  This works much better if the server can't poll for a minute or two.
-* Improved error handling throughout
-* Add a `usage` page that shows server, edition, cores, and various values to estimate cores used over the last hour.  This also include a CSV download.
-
-### 1.6 (22 February 2022)
-
-* High send or recieve queues in Availability Groups are shown as alerts or warnings.  See the [Features](#features) section for more details.
-* Better logic to find the installed date
-* Server status and metrics are saved between restarts in JSON files in the `cache` folder
-* CPU monitoring is incremental.  Previously it would ask the server for the last 60 minutes of CPU activity and just use that.  Now it only uses values after the last value it already had.  This mainly helps on the active node of an Availability Group during failover.
-* Minor improvements to memory usage
-
-
-### 1.4 (7 September 2021)
-
-* Added an Application menu with links to Monitored Servers, Settings, Credentials, the Application Log, and a few other pages
-* Added an About page that links to lots of internal pages
-* Fixed a bug where ignored backups with trailing spaces wouldn't ignore
-* Added a page to list all database snapshots and their age
-
-### 1.3.9 (8 August 2021)
-
-* Supports domain login to edit settings
-* Most server displays now use the max memory if it is configured
-* A "Versions" page lists all the versions and editions at http://localhost:8143/versions.  You can also download this as CSV.  The CSV includes tags, cores, edition, and memory so you can do rudimentary licensing validation.
-* The [Log Events](http://localhost:8143/log) now includes a filter.  You can reach this by clicking on the "Refreshed" label on the upper right.
-* If servers have the proper extended event session, those events can be filtered. If you haven't created the Extended Event session, the code to do so is listed on the page.  Please see the Extended Events section in this document.
-* The Availability Group page now has JSON output at http://localhost:8143/ag/json.  This should be suitable for generating alerts.
-
 
 <a id="permissions"></a>
 
