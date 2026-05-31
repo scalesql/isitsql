@@ -1033,12 +1033,13 @@ func serverPage(w http.ResponseWriter, req *http.Request) {
 
 	sessions, err := session.Get(context.Background(), wr.DB, wr.MajorVersion)
 	if err != nil {
-		//sessions = make([]*ActiveSession, 0)
 		WinLogln(fmt.Sprintf("Get Active Sessions: %v", err))
 		pageData.Context.Message = fmt.Sprintf("Get Active Sessions: %v", err)
 		pageData.Context.MessageClass = "alert-danger"
+		pageData.Sessions = make([]session.Session, 0)
+	} else {
+		pageData.Sessions = sessions
 	}
-	pageData.Sessions = sessions
 
 	// check for blocking
 	for _, s := range sessions {
