@@ -82,7 +82,7 @@ type SqlServer struct {
 	Tags             []string `json:"tags,omitempty"`
 	FQDN             string   `json:"fqdn,omitempty"`
 	ConnectionType   string   `json:"connection_type,omitempty"`
-	ConnectionString string   `json:"-,omitempty"`
+	ConnectionString string   `json:"-"`
 	CredentialKey    string   `json:"credential_key,omitempty"`
 	SlugOverride     string   `json:"slug_override,omitempty"`
 	Description      string   `json:"description,omitempty"`
