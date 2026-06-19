@@ -102,6 +102,7 @@ func launchWebServer() {
 	//group.HandleFunc("GET /apiall/", ApiAll)
 	group.HandleFunc("GET /api/waits/{server}", APIServerWaits)
 	group.HandleFunc("GET /api/waits2/{server}", APIServerWaits2)
+	group.HandleFunc("GET /api/health", APIHealth)
 
 	//group.HandleFunc("GET /hello/{server}", ApiServerJson)
 	group.HandleFunc("GET /dashboard/{servers...}", dashboardPage)

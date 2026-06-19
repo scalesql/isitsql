@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/metricvaluering"
 	"github.com/scalesql/isitsql/internal/waitmap"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -62,6 +62,59 @@ func ApiServerJson(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Not Found"))
+	}
+}
+
+// APIHealth returns a JSON document of any active health issues in SQL Servers
+// These are the same errors and warnings that are displayed at the top of the page
+// The API is in real-time when it is called
+// TODO It should also have the friendly name and instance name as fields in Event
+// TODO Also add a field for the actual error itself that is different than the message
+// CONSIDER: This should accept a seconds parameter and only report errors or warnings that are at least that many seconds old.
+func APIHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
+	w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
+	w.Header().Set("Expires", "0")                                         // Proxies.
+
+	type Event struct {
+		Message  string    `json:"message"`
+		PollTime time.Time `json:"last_good"`
+	}
+	type Payload struct {
+		Healthy       bool      `json:"healthy"`
+		OldestError   time.Time `json:"oldest_error"`
+		OldestWarning time.Time `json:"oldest_warning"`
+		Errors        []Event   `json:"errors"`
+		Warnings      []Event   `json:"warnings"`
+	}
+	body := Payload{
+		Healthy:       true,
+		OldestError:   time.Now(),
+		OldestWarning: time.Now(),
+	}
+
+	pa := getServerErrorList()
+	for _, pe := range pa.Errors {
+		body.Healthy = false
+		body.Errors = append(body.Errors, Event{"ERROR: " + pe.String(), pe.LastPollTime})
+		if pe.LastPollTime.Before(body.OldestError) {
+			body.OldestError = pe.LastPollTime
+		}
+	}
+
+	for _, pe := range pa.Warnings {
+		body.Healthy = false
+		body.Warnings = append(body.Warnings, Event{"WARN: " + pe.String(), pe.LastPollTime})
+		if pe.LastPollTime.Before(body.OldestWarning) {
+			body.OldestWarning = pe.LastPollTime
+		}
+	}
+
+	err := json.NewEncoder(w).Encode(body)
+	if err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		WinLogErr(err)
+		return
 	}
 }
 

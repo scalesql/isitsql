@@ -163,6 +163,12 @@ func humanateBytes(s uint64, base float64, sizes []string) string {
 	return fmt.Sprintf(f, val, suffix)
 }
 
+// DurationToShortString to returns the differenc between two time.Time in #unit format
+// such as 3s, 3d, 2m.  It ranges from seconds (s), minutes (m), to days (d)
+func DurationToShortString(a, b time.Time) string {
+	return durationToShortString(a, b)
+}
+
 func durationToShortString(a, b time.Time) string {
 	if a.IsZero() {
 		return "never"

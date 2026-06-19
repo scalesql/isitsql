@@ -1,6 +1,7 @@
 # Advanced IsItSQL Topics
 * [Deploy New Releases Using PowerShell](#deploy)
 * [Send Missing Backup Alerts Using PowerShell](#backup-alerts)
+* [Notfiy on Errors and Warnings](#errors)
 
 
 <a id="deploy"></a>
@@ -149,3 +150,39 @@ Send-MailMessage -SmtpServer $smtp -Subject "Missing Database Backups" -Body $ht
 
 Write-Output "Done."
 ```
+
+<a id="errors"></a>
+## Alert on Errors and Warnings
+The Errors and Warnings displayed at the top of the page are Available as a JSON API page at `/api/health`.  Below is a sample.  The PowerShell script above can be modified to email alerts based on this JSON.
+
+* If no Errors or Warnings are present, `healthy` will be true
+* A time of `0001-01-01T00:00:00Z` means that he error or warning has been present since IsItSQL startup
+
+```json
+{
+    "healthy": false,
+    "oldest_error": "0001-01-01T00:00:00Z",
+    "oldest_warning": "2026-05-26T20:51:37.7859118-05:00",
+    "errors": [
+        {
+            "message": "ERROR: (never) friendly-name: getName: no named pipe instance matching '' returned from host 'sqlteam-mssql.internal'",
+            "last_good": "0001-01-01T00:00:00Z"
+        },
+        {
+            "message": "ERROR: (now) AG: Listener1-sqlnode1 (sqlnode1): ONLINE_IN_PROGRESS: NOT_HEALTHY  (send: 875 KB;  redo: 24 GB)",
+            "last_good": "2026-05-26T20:51:42.9724204-05:00"
+        },
+    ],
+    "warnings": [
+        {
+            "message": "WARN: (5s) AG: Listener3-D40\\SQL2017 (D40\\SQL2017): ONLINE: NOT_HEALTHY  (send: 1.9 MB;  redo: 8.3 GB)",
+            "last_good": "2026-05-26T20:51:37.7859118-05:00"
+        },
+        {
+            "message": "WARN: (5s) AG: Listener1-D40\\SQL2017 (D40\\SQL2017): ONLINE: NOT_HEALTHY  (send: 1.9 MB;  redo: 8.3 GB)",
+            "last_good": "2026-05-26T20:51:37.8048054-05:00"
+        }
+    ]
+}
+```
+

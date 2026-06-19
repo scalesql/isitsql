@@ -12,18 +12,34 @@ import (
 	"github.com/scalesql/isitsql/internal/cpuring"
 	"github.com/scalesql/isitsql/internal/diskio"
 	"github.com/scalesql/isitsql/internal/dwaits"
+	"github.com/scalesql/isitsql/internal/gui"
 	"github.com/scalesql/isitsql/internal/metricvaluering"
 	"github.com/scalesql/isitsql/internal/mssql"
 	"github.com/scalesql/isitsql/internal/mssql/agent"
 	"github.com/scalesql/isitsql/internal/waitmap"
 )
 
+// PollError includes Errors and Warnings when polling servers
 type PollError struct {
 	FriendlyName string
 	InstanceName string
 	Error        string
 	ErrorRaw     string
 	LastPollTime time.Time
+}
+
+// String returns a string in the format "(3s) FriendlyName: InstanceName: Message"
+// So far, it is used used for the /api/health JSON page
+func (pe PollError) String() string {
+	str := "(" + gui.DurationToShortString(pe.LastPollTime, time.Now()) + ") "
+	if pe.FriendlyName != "" {
+		str += pe.FriendlyName + ": "
+	}
+	if pe.InstanceName != "" {
+		str += pe.InstanceName + ": "
+	}
+	str += pe.Error
+	return str
 }
 
 // DisplayName returns the name to display for a SqlServer
