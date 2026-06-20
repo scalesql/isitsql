@@ -35,6 +35,8 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
 * Added a page to view the most recent SQL Server Error Log
 * Add the login name to the `/connections` page
 * Updated the Extended Events Page to suggest a newer standard event session and handle the `database_name` field.  The SQL text display on the page now displays 300 characters instead of 200.
+* Added `/api/health` to return errors and warnings as a JSON API
+* Improved support for Contained Availability Group backups
 
 ### 2.6 (January 2026)
 * Rename the Server Information Page as the Server About page and move the tab to the end

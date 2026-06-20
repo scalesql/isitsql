@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/backup"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/backup"
+	"github.com/scalesql/isitsql/internal/mssql"
 )
 
 type databaseBackups struct {
@@ -164,8 +165,56 @@ func (s *SqlServerWrapper) setBackups() error {
 	s.RLock()
 	majorVersion := s.MajorVersion
 	s.RUnlock()
+	if majorVersion >= mssql.SQL2022 {
+		backupQuery = `
+			-- SQL Server 2022 and higher
+			-- Are we connected to the Listener of a CAG?
+			-- If so, we will use the CAG name here
+			DECLARE @CAG SYSNAME;
+			SELECT @CAG = ag.[name]
+			FROM sys.dm_exec_sessions s
+			JOIN sys.availability_groups ag ON ag.group_id = s.contained_availability_group_id
+			WHERE session_id = @@SPID;
 
-	if majorVersion >= 12 {
+			;WITH rawbackups AS ( 
+				select 
+					bus.server_name
+					,bus.database_name
+					,bus.backup_start_date
+					,bus.type
+					,bmf.physical_device_name
+				--,* 
+				from msdb.dbo.backupset bus
+				join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
+			), fixeddb AS (
+				SELECT	COALESCE(@CAG, ag.name, server_name) as host,
+						@@SERVERNAME AS instance,
+						-- CTE.database_name AS raw_name,
+						COALESCE(logdb.physical_database_name, physdb.[physical_database_name]) as [database_name],
+						backup_start_date, 
+						[type], 
+						physical_device_name
+				FROM	rawbackups
+				-- JOIN on the physical database name (for master and msdb)
+				LEFT JOIN	sys.databases physdb ON physdb.[physical_database_name] = rawbackups.database_name
+				-- JOIN on the physical database name (for master and msdb)
+				LEFT JOIN   sys.databases logdb ON logdb.[name] = rawbackups.database_name 
+				-- In the AG, sys.databases.replica_id will be null, but we have the AG from above
+				LEFT JOIN sys.availability_replicas r ON r.replica_id = logdb.replica_id
+				LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
+			), sorted AS (
+				SELECT *,
+					ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
+				FROM fixeddb
+			)
+			SELECT host, [instance], database_name, backup_start_date, [type], physical_device_name
+			FROM sorted
+			WHERE RowNumber = 1 
+			ORDER BY database_name, backup_start_date DESC;
+
+		`
+
+	} else if majorVersion >= mssql.SQL2014 {
 		backupQuery = `
 
 		;WITH CTE AS ( 
@@ -262,7 +311,7 @@ func (s *SqlServerWrapper) setBackups() error {
 			// if agname != "" {
 			// 	agbackup.SetLog(agname, dbName, start, instance, device)
 			// }
-		case "I", "D": // full or differential
+		case "I", "D": // differential or full
 			backup.SetFull(host, db, start, instance, device)
 		}
 	}

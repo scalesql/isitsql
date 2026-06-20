@@ -27,3 +27,13 @@ func VersionToString(version string) string {
 	}
 	return new
 }
+
+const (
+	SQL2012 = 11
+	SQL2014 = 12
+	SQL2016 = 13
+	SQL2017 = 14
+	SQL2019 = 15
+	SQL2022 = 16
+	SQL2026 = 17
+)

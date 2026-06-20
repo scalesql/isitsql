@@ -11,6 +11,7 @@ import (
 type Database struct {
 	DatabaseID         int       `json:"database_id,omitempty"`
 	Name               string    `json:"name,omitempty"`
+	PhysicalName       string    `json:"physical_name,omitempty"`
 	DataSizeKB         int64     `json:"data_size_kb,omitempty"`
 	LogSizeKB          int64     `json:"log_size_kb,omitempty"`
 	CompatibilityLevel int       `json:"compatibility_level,omitempty"`

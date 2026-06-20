@@ -244,8 +244,13 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 	lastBackupPoll := s.LastBackupPoll
 	s.RUnlock()
 
+	backupPollFrequency := 270 * time.Second // 4m30s
+	if DEV {
+		backupPollFrequency = 0
+	}
+
 	// poll backups every five minutes
-	if time.Since(lastBackupPoll) > 5*time.Minute {
+	if time.Since(lastBackupPoll) > backupPollFrequency {
 		if err = s.pollBackups(); err != nil {
 			return true, errors.Wrap(err, "pollBackups")
 		}

@@ -17,13 +17,13 @@ func init() {
 
 // DBKey identifies a unique backup row
 type DBKey struct {
-	Host       string
+	Host     string
 	Database string
 }
 
 // Backup is the most recent backup of a particular type for a database
 type Backup struct {
-	Host           string
+	Host         string
 	Database     string
 	FullStarted  time.Time
 	FullInstance string
@@ -99,7 +99,7 @@ func Get(host string, db string) (backup Backup, found bool) {
 // Delete removes all backups for a database in an AG
 func Delete(host string, db string) {
 	mux.Lock()
-	mux.Unlock()
+	defer mux.Unlock()
 
 	for k := range backups {
 		if k.Host == strings.ToUpper(host) && k.Database == strings.ToUpper(db) {
@@ -110,7 +110,6 @@ func Delete(host string, db string) {
 
 // SetFull records that a full backup took place against an AG database
 func SetFull(host string, db string, started time.Time, instance string, device string) {
-
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -162,11 +161,11 @@ func SetLog(host string, db string, started time.Time, instance string, device s
 	}
 }
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if strings.ToUpper(b) == strings.ToUpper(a) {
-			return true
-		}
-	}
-	return false
-}
+// func stringInSlice(a string, list []string) bool {
+// 	for _, b := range list {
+// 		if strings.ToUpper(b) == strings.ToUpper(a) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }

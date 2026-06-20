@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/scalesql/isitsql/internal/backup"
 	"github.com/scalesql/isitsql/internal/hadr"
-	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/mssql"
 	"golang.org/x/exp/slices"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -32,116 +33,12 @@ func (s *SqlServerWrapper) getDatabases() error {
 		return errors.Wrap(err, "gettempdbsize")
 	}
 	var dbQuery string
-
-	// If we should query for AG, otherwise, this instance is the host
-	if ServerVersion >= 12 {
-		dbQuery = `
-
-		SELECT	d.database_id, d.[name]
-			,sizes.DataSizeKB
-			,sizes.LogSizeKB
-			,state_desc
-			,recovery_model_desc
-			,COALESCE(compatibility_level, 0)
-			,COALESCE(collation_name, 'Unknown')
-			,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
-			,CAST (
-				CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
-						AS bit) AS IsMirrored
-			,COALESCE(CAST(CASE WHEN m.mirroring_role = 1 THEN 1 ELSE 0 END AS BIT), 0) AS IsPrincipal
-			,COALESCE(mirroring_state, -1) AS MirrorState 
-			,COALESCE(mirroring_state_desc, '') AS MirrorStateDesc
-			,COALESCE(mirroring_role, -1) AS MirrorRole
-			,COALESCE(mirroring_role_desc, '') AS MirrorRoleDesc
-			,COALESCE(mirroring_safety_level, -1) AS MirrorSafety
-			,COALESCE(mirroring_safety_level_desc, '') AS MirrorSafetyDesc
-			,COALESCE(mirroring_partner_name, '') AS MirrorPartner
-			,COALESCE(mirroring_witness_name, '') AS MirrorWitness
-			,COALESCE(mirroring_witness_state, -1) AS MirrorWitnessState
-			,COALESCE(mirroring_witness_state_desc, '') AS MirrorWitnessStateDesc
-			,COALESCE((SELECT	cntr_value
-							FROM	sys.dm_os_performance_counters
-		--					FROM	tempdb.dbo.dm_os_performance_counters
-							WHERE	counter_name = 'Log Send Queue KB'
-							and		instance_name = d.[name]),0) AS MirrorSendQueue 
-			,COALESCE((SELECT	cntr_value
-					FROM	sys.dm_os_performance_counters
-		--			FROM	tempdb.dbo.dm_os_performance_counters
-					WHERE	counter_name = 'Redo Queue KB'
-					and		instance_name = d.[name]),0) AS MirrorRedoQueue
-			,d.create_date
-			,COALESCE(ag.[name], @@SERVERNAME) AS [HostName]
-			,d.is_read_only
-		FROM	master.sys.databases d
-		JOIN (
-				SELECT 
-					database_id,
-					DataSizeKB = CAST(SUM(CASE WHEN type_desc <> 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT),
-					LogSizeKB = CAST(SUM(CASE WHEN type_desc = 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT)
-				FROM master.sys.master_files
-				GROUP BY database_id) AS sizes
-			ON sizes.database_id = d.database_id
-		LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
-		--	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
-		LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
-		LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
-		WHERE d.source_database_id IS NULL 
-		
-
-		`
-
-	} else {
-		dbQuery = `
-		
-		SELECT	d.database_id, d.[name]
-			,sizes.DataSizeKB
-			,sizes.LogSizeKB
-			,state_desc
-			,recovery_model_desc
-			,COALESCE(compatibility_level, 0)
-			,COALESCE(collation_name, 'Unknown')
-			,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
-			,CAST (
-				CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
-						AS bit) AS IsMirrored
-			,COALESCE(CAST(CASE WHEN m.mirroring_role = 1 THEN 1 ELSE 0 END AS BIT), 0) AS IsPrincipal
-			,COALESCE(mirroring_state, -1) AS MirrorState 
-			,COALESCE(mirroring_state_desc, '') AS MirrorStateDesc
-			,COALESCE(mirroring_role, -1) AS MirrorRole
-			,COALESCE(mirroring_role_desc, '') AS MirrorRoleDesc
-			,COALESCE(mirroring_safety_level, -1) AS MirrorSafety
-			,COALESCE(mirroring_safety_level_desc, '') AS MirrorSafetyDesc
-			,COALESCE(mirroring_partner_name, '') AS MirrorPartner
-			,COALESCE(mirroring_witness_name, '') AS MirrorWitness
-			,COALESCE(mirroring_witness_state, -1) AS MirrorWitnessState
-			,COALESCE(mirroring_witness_state_desc, '') AS MirrorWitnessStateDesc
-			,COALESCE((SELECT	cntr_value
-							FROM	sys.dm_os_performance_counters
-		--					FROM	tempdb.dbo.dm_os_performance_counters
-							WHERE	counter_name = 'Log Send Queue KB'
-							and		instance_name = d.[name]),0) AS MirrorSendQueue 
-			,COALESCE((SELECT	cntr_value
-					FROM	sys.dm_os_performance_counters
-		--			FROM	tempdb.dbo.dm_os_performance_counters
-					WHERE	counter_name = 'Redo Queue KB'
-					and		instance_name = d.[name]),0) AS MirrorRedoQueue
-			,d.create_date
-			,@@SERVERNAME AS [HostName]
-			,d.is_read_only
-		FROM	master.sys.databases d
-		JOIN (
-				SELECT 
-					database_id,
-					DataSizeKB = CAST(SUM(CASE WHEN type_desc <> 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT),
-					LogSizeKB = CAST(SUM(CASE WHEN type_desc = 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT)
-				FROM master.sys.master_files
-				GROUP BY database_id) AS sizes
-			ON sizes.database_id = d.database_id
-		LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
-		--	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
-		WHERE d.source_database_id IS NULL 
-		
-		`
+	if ServerVersion >= mssql.SQL2022 {
+		dbQuery = pollQuery2022
+	} else if ServerVersion >= mssql.SQL2014 {
+		dbQuery = pollQuery2014
+	} else { // before SQL 2014
+		dbQuery = pollQuery2012
 	}
 
 	// TODO this query can generate values greater than INT
@@ -176,7 +73,7 @@ func (s *SqlServerWrapper) getDatabases() error {
 			&dbm.MirrorWitness,
 			&dbm.MirrorWitnessState, &dbm.MirrorWitnessStateDesc,
 			&dbm.MirrorSendQueue, &dbm.MirrorRedoQueue,
-			&db.CreateDate, &db.Host, &db.IsReadOnly)
+			&db.CreateDate, &db.Host, &db.IsReadOnly, &db.PhysicalName)
 		if err != nil {
 			return errors.Wrap(err, "scan")
 		}
@@ -240,7 +137,9 @@ func (s *SqlServerWrapper) getDatabases() error {
 		}
 
 		// Get any backups for this database
-		b, found := backup.Get(db.Host, db.Name)
+		// We use the physical database name
+		// For master and msdb in an AG, we will get AGName_master, AGName_msdb
+		b, found := backup.Get(db.Host, db.PhysicalName)
 		if found {
 			db.LastBackup = b.FullStarted
 			db.LastBackupDevice = b.FullDevice
@@ -350,3 +249,181 @@ func (s *SqlServerWrapper) getTempDBSize() (dataKB int, logKB int, err error) {
 	}
 	return
 }
+
+// *******************************************************************************/
+// queries for polling
+// *******************************************************************************/
+// SQL 2022 and newer
+// if we are connected to the Listener, all databases are in the containing Availability Group
+// we that from sys.dm_exec_sessions
+var pollQuery2022 = `
+DECLARE @CAG sysname
+SELECT	@CAG = ag.[name]
+FROM	sys.dm_exec_sessions s
+JOIN	sys.availability_groups ag ON ag.group_id = s.contained_availability_group_id
+WHERE	s.session_id = @@SPID
+AND		s.contained_availability_group_id IS NOT NULL;
+
+SELECT	
+	d.database_id, d.[name]
+	,sizes.DataSizeKB
+	,sizes.LogSizeKB
+	,state_desc
+	,recovery_model_desc
+	,COALESCE(compatibility_level, 0)
+	,COALESCE(collation_name, 'Unknown')
+	,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
+	,CAST (
+		CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
+				AS bit) AS IsMirrored
+	,COALESCE(CAST(CASE WHEN m.mirroring_role = 1 THEN 1 ELSE 0 END AS BIT), 0) AS IsPrincipal
+	,COALESCE(mirroring_state, -1) AS MirrorState 
+	,COALESCE(mirroring_state_desc, '') AS MirrorStateDesc
+	,COALESCE(mirroring_role, -1) AS MirrorRole
+	,COALESCE(mirroring_role_desc, '') AS MirrorRoleDesc
+	,COALESCE(mirroring_safety_level, -1) AS MirrorSafety
+	,COALESCE(mirroring_safety_level_desc, '') AS MirrorSafetyDesc
+	,COALESCE(mirroring_partner_name, '') AS MirrorPartner
+	,COALESCE(mirroring_witness_name, '') AS MirrorWitness
+	,COALESCE(mirroring_witness_state, -1) AS MirrorWitnessState
+	,COALESCE(mirroring_witness_state_desc, '') AS MirrorWitnessStateDesc
+	,COALESCE((SELECT	cntr_value
+					FROM	sys.dm_os_performance_counters
+--					FROM	tempdb.dbo.dm_os_performance_counters
+					WHERE	counter_name = 'Log Send Queue KB'
+					and		instance_name = d.[name]),0) AS MirrorSendQueue 
+	,COALESCE((SELECT	cntr_value
+			FROM	sys.dm_os_performance_counters
+--			FROM	tempdb.dbo.dm_os_performance_counters
+			WHERE	counter_name = 'Redo Queue KB'
+			and		instance_name = d.[name]),0) AS MirrorRedoQueue
+	,d.create_date
+	,COALESCE(@CAG, ag.[name], @@SERVERNAME) AS [HostName]
+	,d.is_read_only
+	,d.physical_database_name
+FROM	master.sys.databases d
+JOIN (
+		SELECT 
+			database_id,
+			DataSizeKB = CAST(SUM(CASE WHEN type_desc <> 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT),
+			LogSizeKB = CAST(SUM(CASE WHEN type_desc = 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT)
+		FROM master.sys.master_files
+		GROUP BY database_id) AS sizes
+	ON sizes.database_id = d.database_id
+LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
+--	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
+LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
+LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
+WHERE d.source_database_id IS NULL; 
+	
+`
+
+// SQL 2014 to SQL 2019
+var pollQuery2014 = `
+SELECT	
+	d.database_id, d.[name]
+	,sizes.DataSizeKB
+	,sizes.LogSizeKB
+	,state_desc
+	,recovery_model_desc
+	,COALESCE(compatibility_level, 0)
+	,COALESCE(collation_name, 'Unknown')
+	,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
+	,CAST (
+		CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
+				AS bit) AS IsMirrored
+	,COALESCE(CAST(CASE WHEN m.mirroring_role = 1 THEN 1 ELSE 0 END AS BIT), 0) AS IsPrincipal
+	,COALESCE(mirroring_state, -1) AS MirrorState 
+	,COALESCE(mirroring_state_desc, '') AS MirrorStateDesc
+	,COALESCE(mirroring_role, -1) AS MirrorRole
+	,COALESCE(mirroring_role_desc, '') AS MirrorRoleDesc
+	,COALESCE(mirroring_safety_level, -1) AS MirrorSafety
+	,COALESCE(mirroring_safety_level_desc, '') AS MirrorSafetyDesc
+	,COALESCE(mirroring_partner_name, '') AS MirrorPartner
+	,COALESCE(mirroring_witness_name, '') AS MirrorWitness
+	,COALESCE(mirroring_witness_state, -1) AS MirrorWitnessState
+	,COALESCE(mirroring_witness_state_desc, '') AS MirrorWitnessStateDesc
+	,COALESCE((SELECT	cntr_value
+					FROM	sys.dm_os_performance_counters
+--					FROM	tempdb.dbo.dm_os_performance_counters
+					WHERE	counter_name = 'Log Send Queue KB'
+					and		instance_name = d.[name]),0) AS MirrorSendQueue 
+	,COALESCE((SELECT	cntr_value
+			FROM	sys.dm_os_performance_counters
+--			FROM	tempdb.dbo.dm_os_performance_counters
+			WHERE	counter_name = 'Redo Queue KB'
+			and		instance_name = d.[name]),0) AS MirrorRedoQueue
+	,d.create_date
+	,COALESCE(ag.[name], @@SERVERNAME) AS [HostName]
+	,d.is_read_only
+	,d.[name] AS physical_database_name
+FROM	master.sys.databases d
+JOIN (
+		SELECT 
+			database_id,
+			DataSizeKB = CAST(SUM(CASE WHEN type_desc <> 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT),
+			LogSizeKB = CAST(SUM(CASE WHEN type_desc = 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT)
+		FROM master.sys.master_files
+		GROUP BY database_id) AS sizes
+	ON sizes.database_id = d.database_id
+LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
+--	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
+LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
+LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
+WHERE d.source_database_id IS NULL; 
+	
+			`
+
+// SQL 2012 and earlier
+var pollQuery2012 = `
+SELECT	
+	d.database_id, 
+	d.[name]
+	,sizes.DataSizeKB
+	,sizes.LogSizeKB
+	,state_desc
+	,recovery_model_desc
+	,COALESCE(compatibility_level, 0)
+	,COALESCE(collation_name, 'Unknown')
+	,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
+	,CAST (
+		CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
+				AS bit) AS IsMirrored
+	,COALESCE(CAST(CASE WHEN m.mirroring_role = 1 THEN 1 ELSE 0 END AS BIT), 0) AS IsPrincipal
+	,COALESCE(mirroring_state, -1) AS MirrorState 
+	,COALESCE(mirroring_state_desc, '') AS MirrorStateDesc
+	,COALESCE(mirroring_role, -1) AS MirrorRole
+	,COALESCE(mirroring_role_desc, '') AS MirrorRoleDesc
+	,COALESCE(mirroring_safety_level, -1) AS MirrorSafety
+	,COALESCE(mirroring_safety_level_desc, '') AS MirrorSafetyDesc
+	,COALESCE(mirroring_partner_name, '') AS MirrorPartner
+	,COALESCE(mirroring_witness_name, '') AS MirrorWitness
+	,COALESCE(mirroring_witness_state, -1) AS MirrorWitnessState
+	,COALESCE(mirroring_witness_state_desc, '') AS MirrorWitnessStateDesc
+	,COALESCE((SELECT	cntr_value
+					FROM	sys.dm_os_performance_counters
+--					FROM	tempdb.dbo.dm_os_performance_counters
+					WHERE	counter_name = 'Log Send Queue KB'
+					and		instance_name = d.[name]),0) AS MirrorSendQueue 
+	,COALESCE((SELECT	cntr_value
+			FROM	sys.dm_os_performance_counters
+--			FROM	tempdb.dbo.dm_os_performance_counters
+			WHERE	counter_name = 'Redo Queue KB'
+			and		instance_name = d.[name]),0) AS MirrorRedoQueue
+	,d.create_date
+	,@@SERVERNAME AS [HostName]
+	,d.is_read_only
+	,d.[name] AS physical_database_name
+FROM	master.sys.databases d
+JOIN (
+		SELECT 
+			database_id,
+			DataSizeKB = CAST(SUM(CASE WHEN type_desc <> 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT),
+			LogSizeKB = CAST(SUM(CASE WHEN type_desc = 'LOG' THEN CAST(size AS BIGINT) ELSE 0 END ) * 8 AS BIGINT)
+		FROM master.sys.master_files
+		GROUP BY database_id) AS sizes
+	ON sizes.database_id = d.database_id
+LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
+--	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
+WHERE d.source_database_id IS NULL;
+`
