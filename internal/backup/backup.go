@@ -17,12 +17,14 @@ func init() {
 
 // DBKey identifies a unique backup row
 type DBKey struct {
+	Domain   string
 	Host     string
 	Database string
 }
 
 // Backup is the most recent backup of a particular type for a database
 type Backup struct {
+	Domain       string
 	Host         string
 	Database     string
 	FullStarted  time.Time
@@ -66,18 +68,19 @@ type Backup struct {
 // }
 
 // Set makes sure an entry exists
-func Set(host string, db string) {
+// sets an empty backup
+func Set(domain, host, db string) {
 	mux.Lock()
 	defer mux.Unlock()
 
-	set(host, db)
+	set(domain, host, db)
 }
 
-func set(host string, db string) {
-	key := DBKey{Host: strings.ToUpper(host), Database: strings.ToUpper(db)}
+func set(domain, host, db string) {
+	key := newkey(domain, host, db)
 	_, found := backups[key]
 	if !found {
-		b := Backup{Host: host, Database: db}
+		b := Backup{Domain: domain, Host: host, Database: db}
 		backups[key] = b
 		//log.Print("Setting: ", key)
 		//log.Print("Map Length: ", len(backups))
@@ -85,35 +88,35 @@ func set(host string, db string) {
 }
 
 // Get returns most recent backup of a type of an AG database
-func Get(host string, db string) (backup Backup, found bool) {
+func Get(domain, host, db string) (backup Backup, found bool) {
 
 	mux.RLock()
 	defer mux.RUnlock()
 
-	key := DBKey{Host: strings.ToUpper(host), Database: strings.ToUpper(db)}
+	key := newkey(domain, host, db)
 	backup, found = backups[key]
 
 	return backup, found
 }
 
 // Delete removes all backups for a database in an AG
-func Delete(host string, db string) {
+func Delete(domain, host, db string) {
 	mux.Lock()
 	defer mux.Unlock()
 
 	for k := range backups {
-		if k.Host == strings.ToUpper(host) && k.Database == strings.ToUpper(db) {
+		if k.Domain == strings.ToUpper(domain) && k.Host == strings.ToUpper(host) && k.Database == strings.ToUpper(db) {
 			delete(backups, k)
 		}
 	}
 }
 
 // SetFull records that a full backup took place against an AG database
-func SetFull(host string, db string, started time.Time, instance string, device string) {
+func SetFull(domain, host, db string, started time.Time, instance string, device string) {
 	mux.Lock()
 	defer mux.Unlock()
 
-	key := DBKey{Host: strings.ToUpper(host), Database: strings.ToUpper(db)}
+	key := newkey(domain, host, db)
 	backup, found := backups[key]
 	if found {
 		if backup.FullStarted.Before(started) {
@@ -124,6 +127,7 @@ func SetFull(host string, db string, started time.Time, instance string, device 
 			return
 		}
 	} else {
+		backup.Domain = domain
 		backup.Host = host
 		backup.Database = db
 		backup.FullInstance = instance
@@ -135,12 +139,11 @@ func SetFull(host string, db string, started time.Time, instance string, device 
 }
 
 // SetLog records that a log backup took place against an AG database
-func SetLog(host string, db string, started time.Time, instance string, device string) {
-
+func SetLog(domain, host, db string, started time.Time, instance string, device string) {
 	mux.Lock()
 	defer mux.Unlock()
 
-	key := DBKey{Host: strings.ToUpper(host), Database: strings.ToUpper(db)}
+	key := newkey(domain, host, db)
 	backup, found := backups[key]
 	if found {
 		if backup.LogStarted.Before(started) {
@@ -151,6 +154,7 @@ func SetLog(host string, db string, started time.Time, instance string, device s
 			return
 		}
 	} else {
+		backup.Domain = domain
 		backup.Host = host
 		backup.Database = db
 		backup.LogInstance = instance
@@ -161,11 +165,6 @@ func SetLog(host string, db string, started time.Time, instance string, device s
 	}
 }
 
-// func stringInSlice(a string, list []string) bool {
-// 	for _, b := range list {
-// 		if strings.ToUpper(b) == strings.ToUpper(a) {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
+func newkey(domain, host, db string) DBKey {
+	return DBKey{Domain: strings.ToUpper(domain), Host: strings.ToUpper(host), Database: strings.ToUpper(db)}
+}

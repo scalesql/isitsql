@@ -26,6 +26,7 @@ func (s *SqlServerWrapper) getDatabases() error {
 	ServerName := s.ServerName
 	ServerVersion := s.MajorVersion
 	currentTime := s.CurrentTime
+	domain := s.Domain
 	s.RUnlock()
 
 	tempdbdata, tempdblog, err := s.getTempDBSize()
@@ -139,7 +140,7 @@ func (s *SqlServerWrapper) getDatabases() error {
 		// Get any backups for this database
 		// We use the physical database name
 		// For master and msdb in an AG, we will get AGName_master, AGName_msdb
-		b, found := backup.Get(db.Host, db.PhysicalName)
+		b, found := backup.Get(domain, db.Host, db.PhysicalName)
 		if found {
 			db.LastBackup = b.FullStarted
 			db.LastBackupDevice = b.FullDevice

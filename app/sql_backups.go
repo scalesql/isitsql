@@ -82,88 +82,12 @@ func (s *SqlServerWrapper) setBackupRowCount() (int, error) {
 	return rowCount, nil
 }
 
-// func (s *SqlServer) setBackupAlert() error {
-
-// 	setg, err := settings.ReadConfig()
-// 	if err != nil {
-// 		return errors.Wrap(err, "readconfig")
-// 	}
-
-// 	// Update the backup Values
-// 	s.Lock()
-// 	defer s.Unlock()
-
-// 	instanceName := s.ServerName
-
-// 	// check all the databases against our list of backups
-// 	for k, d := range s.Databases {
-
-// 		agname := d.AGName
-
-// 		// Alert until I know better
-// 		d.BackupAlert = true
-
-// 		// We don't care about tempdb
-// 		if d.Name == "tempdb" {
-// 			d.BackupAlert = false
-// 			continue
-// 		}
-
-// 		// We don't care about restoring or offline databases
-// 		if d.StateDesc == "RESTORING" || d.StateDesc == "OFFLINE" {
-// 			d.BackupAlert = false
-// 			continue
-// 		}
-
-// 		// if this isn't the preferred backup for this database we don't care
-// 		// I don't care about this any more
-// 		// if d.IsPreferredBackup == false {
-// 		// 	d.BackupAlert = false
-// 		// 	continue
-// 		// }
-
-// 		// get the backups for this database
-// 		bu, ok := s.Backups[k]
-// 		if ok {
-// 			d.LastBackup = bu.FullStart
-// 			d.LastBackupDevice = bu.FullPhysicalDevice
-// 			d.LastBackupInstance = instanceName
-// 			d.LastLogBackup = bu.LogStart
-// 			d.LastLogBackupDevice = bu.LogPhysicalDevice
-// 			d.LastLogBackupInstance = instanceName
-
-// 			// Assume this is a good backup
-// 			d.BackupAlert = false
-// 		}
-
-// 		// Check for an AG backup
-// 		agbkup, found := agbackup.Get(agname, k)
-// 		if found {
-// 			d.LastBackup = agbkup.FullStarted
-// 			d.LastBackupDevice = agbkup.FullDevice
-// 			d.LastBackupInstance = agbkup.FullInstance
-// 			d.LastLogBackup = agbkup.LogStarted
-// 			d.LastLogBackupDevice = agbkup.LogDevice
-// 			d.LastLogBackupInstance = agbkup.LogInstance
-// 			d.BackupAlert = false
-// 		}
-
-// 		if s.CurrentTime.Sub(d.LastBackup).Hours() > float64(setg.BackupAlertHours) {
-// 			d.BackupAlert = true
-// 		}
-// 		if d.RecoveryModelDesc == "FULL" && s.CurrentTime.Sub(d.LastLogBackup).Minutes() > float64(setg.LogBackupAlertMinutes) {
-// 			d.BackupAlert = true
-// 		}
-// 	}
-// 	return nil
-// }
-
 func (s *SqlServerWrapper) setBackups() error {
-
 	var backupQuery string
 
 	s.RLock()
 	majorVersion := s.MajorVersion
+	domain := s.Domain
 	s.RUnlock()
 	if majorVersion >= mssql.SQL2022 {
 		backupQuery = `
@@ -262,8 +186,6 @@ func (s *SqlServerWrapper) setBackups() error {
 		FROM CTE    
 		WHERE RowNumber = 1
 		order by database_name, backup_start_date desc 
-		
-
 	`
 	}
 
@@ -283,36 +205,12 @@ func (s *SqlServerWrapper) setBackups() error {
 			return err
 		}
 
-		// // add to the map
-		// _, ok := b[dbName]
-		// if !ok {
-		// 	//db =
-		// 	b[dbName] = &databaseBackups{
-		// 		DatabaseName: dbName,
-		// 	}
-		// }
-
-		// Check if DB is in AG and save the backup
-		// var agname string = ""
-		// s.RLock()
-		// thisdb, found := s.Databases[dbName]
-		// if found {
-		// 	agname = thisdb.AGName
-		// }
-		// instance := s.ServerName
-		// s.RUnlock()
-
 		// set the map values
 		switch strings.ToUpper(backupType) {
 		case "L":
-			backup.SetLog(host, db, start, instance, device)
-			// b[dbName].LogStart = start
-			// b[dbName].LogPhysicalDevice = device
-			// if agname != "" {
-			// 	agbackup.SetLog(agname, dbName, start, instance, device)
-			// }
+			backup.SetLog(domain, host, db, start, instance, device)
 		case "I", "D": // differential or full
-			backup.SetFull(host, db, start, instance, device)
+			backup.SetFull(domain, host, db, start, instance, device)
 		}
 	}
 
