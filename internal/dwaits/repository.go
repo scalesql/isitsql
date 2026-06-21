@@ -39,8 +39,8 @@ func NewRepository(ctx context.Context) (*Repository, error) {
 	}
 	dir := filepath.Dir(exe)
 	dir = filepath.Join(dir, "cache")
-	r.bw.Start(dir, "w2")
-	return &r, nil
+	err = r.bw.Start(dir, "w2")
+	return &r, err
 }
 
 // ReadHistory reads the cached history
@@ -148,8 +148,7 @@ func (r *Repository) Write(key string, waits waitring.WaitList) error {
 	}
 
 	ring.Enqueue(waits)
-	r.bw.Write(key, waits)
-	return nil
+	return r.bw.Write(key, waits)
 }
 
 func (r *Repository) writehistory(key string, waits waitring.WaitList) {

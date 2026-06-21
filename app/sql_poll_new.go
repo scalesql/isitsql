@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/scalesql/isitsql/internal/failure"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/failure"
 )
 
 // PollRoutine is the new long lived poll
@@ -49,7 +49,7 @@ func newpoll(m *SqlServerWrapper, forcequick bool) {
 		return
 	}
 
-	var bigpoll = false
+	var bigpoll bool
 
 	// duplicate the clean up in case we panic
 	defer func() {

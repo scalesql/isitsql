@@ -133,7 +133,7 @@ func (r *Ring) UnmarshalJSON(bb []byte) error {
 func New(size int) Ring {
 	r := Ring{}
 	r.data = make([]WaitList, size)
-	return r
+	return r //nolint:govet
 }
 
 // Enqueue a value

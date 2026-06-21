@@ -99,7 +99,7 @@ func Get(ag string, db string) (backup Backup, found bool) {
 // Delete removes all backups for a database in an AG
 func Delete(ag string, db string) {
 	mux.Lock()
-	mux.Unlock()
+	defer mux.Unlock()
 
 	for k := range backups {
 		if k.AG == strings.ToUpper(ag) && k.Database == strings.ToUpper(db) {
@@ -164,7 +164,7 @@ func SetLog(ag string, db string, started time.Time, instance string, device str
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
-		if strings.ToUpper(b) == strings.ToUpper(a) {
+		if strings.EqualFold(b, a) {
 			return true
 		}
 	}

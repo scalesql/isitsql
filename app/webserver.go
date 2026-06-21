@@ -1141,7 +1141,10 @@ func serverConnPage(w http.ResponseWriter, req *http.Request) {
 			pointers[i] = &container[i]
 		}
 		rows.Next()
-		rows.Scan(pointers...)
+		err = rows.Scan(pointers...)
+		if err != nil {
+			WinLogErr(err) // just log the error
+		}
 
 		// range over the values (columns) in the array
 		for i, v := range container {

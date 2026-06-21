@@ -157,7 +157,7 @@ func Validate(user, password, group string) (User, error) {
 
 func getLdapConnection(domain string, _ int) (*ldap.Conn, error) {
 	var conn *ldap.Conn
-	conn, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", domain, 389))
+	conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", domain, 389))
 	if err != nil {
 		return nil, errors.Wrap(err, "ldap.dial")
 	}

@@ -3,8 +3,8 @@ package app
 import (
 	"time"
 
-	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/pkg/errors"
+	"github.com/scalesql/isitsql/internal/waitmap"
 	"github.com/sirupsen/logrus"
 )
 
@@ -198,7 +198,10 @@ func (s *SqlServerWrapper) PollWaits() error {
 	// logrus.Debugf("[%s] pollwaits: waits: %d", key, len(waits.Waits))
 
 	// Figure out the wait Summary
-	waits.SetWaitGroups()
+	err = waits.SetWaitGroups()
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "waits.setwaitgroup"))
+	}
 	s.Lock()
 	s.LastWaits = &waits
 	s.Unlock()

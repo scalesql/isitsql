@@ -72,8 +72,6 @@ func (w *Waits) SetWaitGroups() error {
 	defer Mapping.RUnlock()
 	for key, value := range w.Waits {
 		if w.Waits[key].WaitTimeDelta > 0 {
-			// log.Printf("Mapping a wait: %s", key)
-			mapTo = ""
 			wm, ok := Mapping.Mappings[key]
 			if !ok {
 				mapTo = key // we didn't find a mapping

@@ -20,5 +20,5 @@ func incr(i int) int {
 	defer func() {
 		fmt.Println("one")
 	}()
-	return incr(i)
+	return incr(i) //nolint:staticcheck
 }

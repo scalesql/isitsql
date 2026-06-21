@@ -115,7 +115,10 @@ func ReadConfig() (AppConfig, error) {
 			return a, errors.Wrap(err, "newencryptedsessionkey")
 		}
 		a.SessionKey = key
-		a.Save()
+		err = a.Save()
+		if err != nil {
+			logrus.Error(errors.Wrap(err, "readconfig: a.save"))
+		}
 		return a, nil
 	}
 
