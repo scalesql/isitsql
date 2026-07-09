@@ -67,7 +67,7 @@ func (s *SqlServerWrapper) GetActiveSessions() ([]*ActiveSession, error) {
 			-- include sessions that (1) aren't these wait types or (2) are blocked or blocking
 			SELECT * 
 			FROM	cteBlockDetail bd
-			WHERE	wait_type NOT IN ('WAITFOR', 'SP_SERVER_DIAGNOSTICS_SLEEP')
+			WHERE	wait_type NOT IN ('WAITFOR', 'SP_SERVER_DIAGNOSTICS_SLEEP', 'BROKER_RECEIVE_WAITFOR')
 			OR		EXISTS(SELECT * FROM cteBlockDetail WHERE head_blocker_id = bd.session_id)
 			OR		EXISTS(SELECT * FROM cteBlockDetail WHERE blocking_session_id = bd.session_id)
 		) 

@@ -25,7 +25,7 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
 
 ## What's New
 
-### Version 2.7 (May 2026)
+### Version 2.7 (July 2026)
 * **Removed support for SQL Server 2014 Availability Groups**
 * Improved support for SQL Server running in Docker
 * Replaced the Home Page URL with a Home Page Tag field.  This should give cleaner URLs and be more intuitive.  In the Settings page, you can choose which tag is displayed on the home page.
@@ -37,6 +37,7 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
 * Updated the Extended Events Page to suggest a newer standard event session and handle the `database_name` field.  The SQL text display on the page now displays 300 characters instead of 200.
 * Added `/api/health` to return errors and warnings as a JSON API
 * Improved support for Contained Availability Group backups
+* Filter out sessions waiting on `BROKER_RECEIVE_WAITFOR`.  This is typically database mail waiting on mail.
 
 ### 2.6 (January 2026)
 * Rename the Server Information Page as the Server About page and move the tab to the end
