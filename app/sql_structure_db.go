@@ -42,6 +42,10 @@ type Database struct {
 	AGDB            hadr.ReplicaDatabase
 	GroupDatabaseID string `json:"group_database_id"`
 
+	BackupKeyDomain    string `json:"backup_key_domain"`
+	BackupKeyContainer string `json:"backup_key_container"`
+	BackupKeyDatabase  string `json:"backup_key_database"`
+
 	// HADRField   string
 	// HADRHover   string
 	//SendQueueKB int `json:"send_queue_kb"`

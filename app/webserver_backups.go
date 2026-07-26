@@ -16,6 +16,8 @@ func allBackupsPage(w http.ResponseWriter, req *http.Request) {
 	var ignored [][]string
 	htmlTitle := html.EscapeString("Backup Issues - Is It SQL")
 
+	// v0 := backup.Debug()
+	// fmt.Printf("-------------------\n%v\n-------------------\n", v0)
 	//t0 := time.Now()
 
 	type instanceKey struct {

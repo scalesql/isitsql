@@ -87,7 +87,7 @@ func (s *SqlServerWrapper) setBackups() error {
 
 	s.RLock()
 	majorVersion := s.MajorVersion
-	domain := s.Domain
+	// domain := s.Domain
 	s.RUnlock()
 	if majorVersion >= mssql.SQL2022 {
 		backupQuery = `
@@ -101,91 +101,115 @@ func (s *SqlServerWrapper) setBackups() error {
 			WHERE session_id = @@SPID;
 
 			;WITH rawbackups AS ( 
-				select 
+				SELECT 
 					bus.server_name
 					,bus.database_name
 					,bus.backup_start_date
 					,bus.type
 					,bmf.physical_device_name
-				--,* 
 				from msdb.dbo.backupset bus
 				join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
 			), fixeddb AS (
-				SELECT	COALESCE(@CAG, ag.name, server_name) as host,
-						@@SERVERNAME AS instance,
-						-- CTE.database_name AS raw_name,
-						COALESCE(logdb.physical_database_name, physdb.[physical_database_name]) as [database_name],
-						backup_start_date, 
-						[type], 
-						physical_device_name
-				FROM	rawbackups
+				SELECT  
+					@@SERVERNAME AS instance,
+					-- first get AGName_master if we backed up master inside an AG
+					-- this also gets master inside master
+					-- second, if we backed up AGName_master, get that
+					-- third, just get a regular database name
+					COALESCE(logicaldb.physical_database_name, physdb.[physical_database_name], logicaldb.[name]) as [database_name],
+					backup_start_date, 
+					[type], 
+					physical_device_name
+				FROM    rawbackups
 				-- JOIN on the physical database name (for master and msdb)
-				LEFT JOIN	sys.databases physdb ON physdb.[physical_database_name] = rawbackups.database_name
-				-- JOIN on the physical database name (for master and msdb)
-				LEFT JOIN   sys.databases logdb ON logdb.[name] = rawbackups.database_name 
-				-- In the AG, sys.databases.replica_id will be null, but we have the AG from above
-				LEFT JOIN sys.availability_replicas r ON r.replica_id = logdb.replica_id
-				LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
-			), sorted AS (
+				LEFT JOIN   sys.databases physdb ON physdb.[physical_database_name] = rawbackups.database_name
+				-- JOIN on the logical database name (for master and msdb)
+				LEFT JOIN   sys.databases logicaldb ON logicaldb.[name] = rawbackups.database_name 
+				-- In the Contained AG, sys.databases.replica_id will be null, but we have the AG from above
+			), fixedag AS (
+				SELECT fixeddb.*
+					,ag.[name] AS ag_name
+				FROM fixeddb
+				LEFT JOIN sys.databases db ON COALESCE(db.physical_database_name, db.name) = fixeddb.database_name
+				LEFT JOIN sys.dm_hadr_database_replica_states hdrs 
+					ON db.database_id = hdrs.database_id 
+					AND hdrs.is_local = 1  -- Filters to the local replica's stats
+				LEFT JOIN sys.availability_groups ag ON hdrs.group_id = ag.group_id
+			),
+			sorted AS (
 				SELECT *,
 					ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
-				FROM fixeddb
+				FROM fixedag
 			)
-			SELECT host, [instance], database_name, backup_start_date, [type], physical_device_name
+			SELECT 
+				[instance]
+				,[database_name]
+				,backup_start_date
+				,[type]
+				,physical_device_name
+				,COALESCE(DEFAULT_DOMAIN(), 'AG$$' + @CAG, '(NONE)') AS backup_key_domain
+				,COALESCE(@CAG, ag_name, @@SERVERNAME) AS backup_key_container
+				,[database_name] as backup_key_database
 			FROM sorted
 			WHERE RowNumber = 1 
-			ORDER BY database_name, backup_start_date DESC;
-
+			ORDER BY backup_start_date DESC, database_name;
 		`
 
 	} else if majorVersion >= mssql.SQL2014 {
 		backupQuery = `
-
-		;WITH CTE AS ( 
-			select 
-				bus.server_name
-				,bus.database_name
-				,bus.backup_start_date
-				,bus.type
-				,ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
-				,bmf.physical_device_name
-			--,* 
-			from msdb.dbo.backupset bus
-			join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
-		)
-		SELECT	COALESCE(ag.name, server_name) as host,
-				@@SERVERNAME AS instance 
-				,database_name, backup_start_date, type, physical_device_name
-		FROM	CTE
-		JOIN	sys.databases d ON d.[name] = CTE.database_name
-		LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
-		LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
-		WHERE RowNumber = 1
-		order by database_name, backup_start_date desc 
-		
+			;WITH CTE AS ( 
+				select 
+					bus.server_name
+					,bus.database_name
+					,bus.backup_start_date
+					,bus.type
+					,ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
+					,bmf.physical_device_name 
+				from msdb.dbo.backupset bus
+				join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
+			)
+			SELECT
+				@@SERVERNAME AS instance,
+				database_name, 
+				backup_start_date, 
+				type, 
+				physical_device_name,
+				COALESCE(DEFAULT_DOMAIN(), '(NONE)') AS backup_key_domain,
+				COALESCE(ag.name, server_name) as backup_key_container,
+				database_name AS backup_key_database
+			FROM	CTE
+			JOIN	sys.databases d ON d.[name] = CTE.database_name
+			LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
+			LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
+			WHERE RowNumber = 1
+			order by database_name, backup_start_date DESC;
 		`
 
 	} else {
 		backupQuery = `
-	
-		;WITH CTE AS ( 
-			select 
-				bus.server_name 
-				,bus.database_name
-				,bus.backup_start_date
-				,bus.type
-				,ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
-				,bmf.physical_device_name
-			--,* 
-			from msdb.dbo.backupset bus
-			join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
-		)
-		SELECT server_name as host, 
-			@@serverName AS instance
-			,database_name, backup_start_date, type, physical_device_name
-		FROM CTE    
-		WHERE RowNumber = 1
-		order by database_name, backup_start_date desc 
+			;WITH CTE AS ( 
+				select 
+					bus.server_name 
+					,bus.database_name
+					,bus.backup_start_date
+					,bus.type
+					,ROW_NUMBER() OVER(PARTITION BY database_name, type ORDER BY backup_start_date DESC) AS RowNumber
+					,bmf.physical_device_name
+				from msdb.dbo.backupset bus
+				join msdb.dbo.backupmediafamily bmf on bmf.media_set_id = bus.media_set_id
+			)
+			SELECT 
+				@@SERVERNAME AS instance,
+				database_name, 
+				backup_start_date, 
+				type, 
+				physical_device_name,
+				COALESCE(DEFAULT_DOMAIN(), '(NONE)') AS backup_key_domain,
+				server_name AS backup_key_container,
+				database_name AS backup_key_database
+			FROM CTE    
+			WHERE RowNumber = 1
+			order by database_name, backup_start_date DESC; 
 	`
 	}
 
@@ -197,10 +221,11 @@ func (s *SqlServerWrapper) setBackups() error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var host, instance, db, device, backupType string
+		var keyDomain, keyContainer, keyDatabase string
+		var instance, db, device, backupType string
 		var start time.Time
 
-		err := rows.Scan(&host, &instance, &db, &start, &backupType, &device)
+		err := rows.Scan(&instance, &db, &start, &backupType, &device, &keyDomain, &keyContainer, &keyDatabase)
 		if err != nil {
 			return err
 		}
@@ -208,9 +233,9 @@ func (s *SqlServerWrapper) setBackups() error {
 		// set the map values
 		switch strings.ToUpper(backupType) {
 		case "L":
-			backup.SetLog(domain, host, db, start, instance, device)
+			backup.SetLog(keyDomain, keyContainer, keyDatabase, start, instance, device)
 		case "I", "D": // differential or full
-			backup.SetFull(domain, host, db, start, instance, device)
+			backup.SetFull(keyDomain, keyContainer, keyDatabase, start, instance, device)
 		}
 	}
 

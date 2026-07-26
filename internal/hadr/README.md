@@ -1,3 +1,11 @@
+HADR
+====
+* Need to match databases from each node on physical name, then database name
+* Need to query the primary node, but not the contained CAG Listener
+* Case-sensitive comparison???  No.
+
+
+
 ```
 SELECT	ag.[name], agdb.database_id, agdb.is_local, is_primary_replica,
 		agdb.synchronization_state, agdb.synchronization_state_desc,

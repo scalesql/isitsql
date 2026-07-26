@@ -74,7 +74,8 @@ func (s *SqlServerWrapper) getDatabases() error {
 			&dbm.MirrorWitness,
 			&dbm.MirrorWitnessState, &dbm.MirrorWitnessStateDesc,
 			&dbm.MirrorSendQueue, &dbm.MirrorRedoQueue,
-			&db.CreateDate, &db.Host, &db.IsReadOnly, &db.PhysicalName)
+			&db.CreateDate, &db.Host, &db.IsReadOnly, &db.PhysicalName,
+			&db.BackupKeyDomain, &db.BackupKeyContainer, &db.BackupKeyDatabase)
 		if err != nil {
 			return errors.Wrap(err, "scan")
 		}
@@ -302,6 +303,9 @@ SELECT
 	,COALESCE(@CAG, ag.[name], @@SERVERNAME) AS [HostName]
 	,d.is_read_only
 	,d.physical_database_name
+	,COALESCE(DEFAULT_DOMAIN(), 'AG$$' + ag.[name], '(NONE)') AS backup_key_domain
+    ,COALESCE(ag.[name], @@SERVERNAME) AS                        backup_key_container
+    ,COALESCE(d.[physical_database_name], d.[name]) AS         backup_key_database
 FROM	master.sys.databases d
 JOIN (
 		SELECT 
@@ -313,8 +317,9 @@ JOIN (
 	ON sizes.database_id = d.database_id
 LEFT JOIN master.sys.database_mirroring m ON m.database_id = d.database_id
 --	LEFT JOIN tempdb.dbo.database_mirroring m ON m.database_id = d.database_id
-LEFT JOIN sys.availability_replicas r ON r.replica_id = d.replica_id
-LEFT JOIN sys.availability_groups ag on ag.group_id = r.group_id
+LEFT JOIN sys.availability_databases_cluster adc 
+    ON adc.database_name = COALESCE(d.[physical_database_name], d.[name])
+LEFT JOIN sys.availability_groups ag ON ag.group_id = adc.group_id
 WHERE d.source_database_id IS NULL; 
 	
 `
@@ -358,6 +363,9 @@ SELECT
 	,COALESCE(ag.[name], @@SERVERNAME) AS [HostName]
 	,d.is_read_only
 	,d.[name] AS physical_database_name
+	,COALESCE(DEFAULT_DOMAIN(), 'AG$$' + ag.[name], '(NONE)') AS backup_key_domain
+	,COALESCE(ag.[name], @@SERVERNAME) AS                        backup_key_container
+	,d.[name] AS         										 backup_key_database
 FROM	master.sys.databases d
 JOIN (
 		SELECT 
@@ -415,6 +423,9 @@ SELECT
 	,@@SERVERNAME AS [HostName]
 	,d.is_read_only
 	,d.[name] AS physical_database_name
+	,COALESCE(DEFAULT_DOMAIN(), '(NONE)') AS 	backup_key_domain
+	,@@SERVERNAME AS                        	backup_key_container
+	,d.[name] AS         						backup_key_database
 FROM	master.sys.databases d
 JOIN (
 		SELECT 
