@@ -126,7 +126,10 @@ func (s *SqlServerWrapper) setBackups() error {
 				-- JOIN on the logical database name (for master and msdb)
 				LEFT JOIN   sys.databases logicaldb ON logicaldb.[name] = rawbackups.database_name 
 				-- In the Contained AG, sys.databases.replica_id will be null, but we have the AG from above
-			), fixedag AS (
+
+				-- If we don't get any databases, then the database doesn't exist any more
+				WHERE COALESCE(logicaldb.physical_database_name, physdb.[physical_database_name], logicaldb.[name]) IS NOT NULL
+ 			), fixedag AS (
 				SELECT fixeddb.*
 					,ag.[name] AS ag_name
 				FROM fixeddb

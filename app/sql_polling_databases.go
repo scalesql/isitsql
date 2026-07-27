@@ -272,8 +272,8 @@ SELECT
 	,sizes.LogSizeKB
 	,state_desc
 	,recovery_model_desc
-	,COALESCE(compatibility_level, 0)
-	,COALESCE(collation_name, 'Unknown')
+	,COALESCE(compatibility_level, 0) AS [compatibility_level]
+	,COALESCE(collation_name, 'Unknown') AS [collation_name]
 	,COALESCE(CAST(m.mirroring_guid AS NVARCHAR(128)), '') As MirrorGuid
 	,CAST (
 		CASE WHEN m.mirroring_guid IS NOT NULL THEN 1 ELSE 0 END
@@ -302,7 +302,7 @@ SELECT
 	,d.create_date
 	,COALESCE(@CAG, ag.[name], @@SERVERNAME) AS [HostName]
 	,d.is_read_only
-	,d.physical_database_name
+	,COALESCE(d.physical_database_name, d.[name]) AS physical_database_name
 	,COALESCE(DEFAULT_DOMAIN(), 'AG$$' + ag.[name], '(NONE)') AS backup_key_domain
     ,COALESCE(ag.[name], @@SERVERNAME) AS                        backup_key_container
     ,COALESCE(d.[physical_database_name], d.[name]) AS         backup_key_database
