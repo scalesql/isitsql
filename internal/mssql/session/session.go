@@ -223,6 +223,7 @@ var sessionQuery = `
 	OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) AS st
 	CROSS APPLY sys.dm_exec_input_buffer(s.session_id, null) AS ib
 	WHERE	1=1
+	AND		r.wait_type NOT IN ('WAITFOR', 'SP_SERVER_DIAGNOSTICS_SLEEP', 'BROKER_RECEIVE_WAITFOR')
 	AND		s.is_user_process = 1 
 	AND		s.session_id <> @@SPID
 	AND		(r.request_id IS NOT NULL 
@@ -264,6 +265,7 @@ var SessionQueryLegacy = `
 	OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) AS st
 	-- CROSS APPLY sys.dm_exec_input_buffer(s.session_id, null) AS ib
 	WHERE	1=1
+	AND		r.wait_type NOT IN ('WAITFOR', 'SP_SERVER_DIAGNOSTICS_SLEEP', 'BROKER_RECEIVE_WAITFOR')
 	AND		s.is_user_process = 1 
 	AND		s.session_id <> @@SPID
 	AND		(r.request_id IS NOT NULL 
