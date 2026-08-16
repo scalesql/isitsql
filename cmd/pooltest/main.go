@@ -42,7 +42,7 @@ type poolTestConfig struct {
 }
 
 func (r pollResult) String() string {
-	return fmt.Sprintf("server=%s  auth=%s (%s)  conn_start=%s  spid=%d (%s)",
+	return fmt.Sprintf("server=%s  auth=%s (%s)  conn=%s  spid=%d (%s)",
 		r.ServerName, r.AuthMethod, r.Protocol,
 		r.ConnStart.Format("15:04:05"),
 		r.SPID,
