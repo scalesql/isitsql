@@ -301,26 +301,46 @@ func (s *SqlServerWrapper) getName() error {
 	return nil
 }
 
-func (s *SqlServerWrapper) getConnectionInfo() error {
+func (s *SqlServerWrapper) getConnectionInfo(majorVersion int) error {
 	s.RLock()
 	db := s.DB
 	s.RUnlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	start := time.Now()
-	row := db.QueryRowContext(ctx, `
+
+	query := `
 			SELECT	TOP 1 
 				c.session_id				AS SessionID, 
 				c.net_transport				AS NetTransport, 
 				c.auth_scheme				AS AuthScheme,  
-				s.login_name				AS LoginName 
+				s.login_name				AS LoginName, 
+				''							AS SessionContainerName
 		FROM	sys.dm_exec_connections c
 		JOIN	sys.dm_exec_sessions s ON s.session_id = c.session_id
 		WHERE	c.session_id = @@SPID
-	`)
+	`
+
+	// if we are on SQL Server 2022 or later, check for a connection
+	// to a Contained Availability Group
+	if majorVersion >= 16 { // SQL Server 2022
+		query = `
+			SELECT	TOP 1 
+				c.session_id				AS SessionID, 
+				c.net_transport				AS NetTransport, 
+				c.auth_scheme				AS AuthScheme,  
+				s.login_name				AS LoginName,
+				COALESCE(ag.[name], '')		AS session_container_name
+			FROM	sys.dm_exec_connections c
+			JOIN	sys.dm_exec_sessions s ON s.session_id = c.session_id
+			LEFT JOIN sys.availability_groups ag ON ag.group_id = s.contained_availability_group_id;
+`
+	}
+
+	row := db.QueryRowContext(ctx, query)
 	var id int16
-	var transport, auth, login string
-	err := row.Scan(&id, &transport, &auth, &login)
+	var transport, auth, login, container string
+	err := row.Scan(&id, &transport, &auth, &login, &container)
 	if err != nil {
 		return err
 	}
@@ -333,6 +353,7 @@ func (s *SqlServerWrapper) getConnectionInfo() error {
 	s.Connection.NetTransport = transport
 	s.Connection.AuthScheme = auth
 	s.Connection.LoginName = login
+	s.Connection.SessionContinerName = container
 
 	return nil
 }

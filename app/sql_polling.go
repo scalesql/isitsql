@@ -90,13 +90,13 @@ func (s *SqlServerWrapper) getAllMetrics(forcequick bool) (bool, error) {
 		}
 	}
 
-	if forcequick {
-		return false, nil
-	}
-
-	err = s.getConnectionInfo()
+	err = s.getConnectionInfo(majorVersion)
 	if err != nil {
 		return false, err
+	}
+
+	if forcequick {
+		return false, nil
 	}
 
 	// Get the database stats

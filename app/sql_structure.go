@@ -90,11 +90,12 @@ type SqlServer struct {
 	Stats sql.DBStats `json:"-"`
 	//Connection SQLConnection `json:"-"`
 	Connection struct {
-		SessionID    int16
-		NetTransport string
-		AuthScheme   string
-		LoginName    string
-		Latency      time.Duration
+		SessionID           int16
+		NetTransport        string
+		AuthScheme          string
+		LoginName           string
+		Latency             time.Duration
+		SessionContinerName string
 	} `json:"-"`
 
 	// ResetOnThisPoll will be set to true if the server name or start time changes.
