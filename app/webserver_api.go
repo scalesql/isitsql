@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -75,46 +76,74 @@ func APIHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
 	w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
 	w.Header().Set("Expires", "0")                                         // Proxies.
+	w.Header().Set("Content-Type", "application/json")
+
+	var dev, formatted bool
+	serviceStart := globalStats.StartTime
 
 	type Event struct {
 		Message  string    `json:"message"`
-		PollTime time.Time `json:"last_good"`
+		PollTime time.Time `json:"timestamp"`
 	}
+
 	type Payload struct {
-		Healthy       bool      `json:"healthy"`
-		OldestError   time.Time `json:"oldest_error"`
-		OldestWarning time.Time `json:"oldest_warning"`
-		Errors        []Event   `json:"errors"`
-		Warnings      []Event   `json:"warnings"`
+		Healthy     bool      `json:"healthy"`
+		GeneratedAt time.Time `json:"timestamp"`
+		Errors      []Event   `json:"errors"`
+		Warnings    []Event   `json:"warnings"`
 	}
+
 	body := Payload{
-		Healthy:       true,
-		OldestError:   time.Now(),
-		OldestWarning: time.Now(),
+		Healthy:     true,
+		GeneratedAt: time.Now(),
 	}
 
 	pa := getServerErrorList()
 	for _, pe := range pa.Errors {
 		body.Healthy = false
-		body.Errors = append(body.Errors, Event{"ERROR: " + pe.String(), pe.LastPollTime})
-		if pe.LastPollTime.Before(body.OldestError) {
-			body.OldestError = pe.LastPollTime
+		if pe.LastPollTime.IsZero() {
+			pe.LastPollTime = serviceStart
 		}
+		body.Errors = append(body.Errors, Event{"ERROR: " + pe.String(), pe.LastPollTime})
 	}
 
 	for _, pe := range pa.Warnings {
 		body.Healthy = false
+		if pe.LastPollTime.IsZero() {
+			pe.LastPollTime = serviceStart
+		}
 		body.Warnings = append(body.Warnings, Event{"WARN: " + pe.String(), pe.LastPollTime})
-		if pe.LastPollTime.Before(body.OldestWarning) {
-			body.OldestWarning = pe.LastPollTime
+	}
+
+	var value string
+	// if dev == true, append two fake errors and two fake warnings
+	if value = r.URL.Query().Get("dev"); value != "" {
+		dev, _ = strconv.ParseBool(value) // ignore the error
+		if dev {
+			body.Healthy = false
+			body.Errors = append(body.Errors, Event{"ERROR: Fake Error 1m", time.Now().Truncate(1 * time.Minute)})
+			body.Errors = append(body.Errors, Event{"ERROR: Fake Error 5m", time.Now().Truncate(5 * time.Minute)})
+
+			body.Warnings = append(body.Warnings, Event{"WARN: Fake Warning 1m", time.Now().Truncate(1 * time.Minute)})
+			body.Warnings = append(body.Warnings, Event{"WARN: Fake Warning 5m", time.Now().Truncate(5 * time.Minute)})
 		}
 	}
 
-	err := json.NewEncoder(w).Encode(body)
+	encoder := json.NewEncoder(w)
+
+	// if formatted==true, write formatted JSON
+	if value = r.URL.Query().Get("formatted"); value != "" {
+		formatted, _ = strconv.ParseBool(value) // ignore the error
+		if formatted {
+			encoder.SetIndent("", "  ")
+		}
+	}
+
+	// err := json.NewEncoder(w).Encode(body)
+	err := encoder.Encode(body)
 	if err != nil {
 		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
 		WinLogErr(err)
-		return
 	}
 }
 
