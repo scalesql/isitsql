@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -46,10 +47,27 @@ func renderFSDynamic(w http.ResponseWriter, name string, data any) {
 	}
 }
 
+// renderError needs a context, request, response, error
 // renderError shows a basic HTML page for any template error
+// can't write to X: server.html path=/server/abc
 func renderError(w http.ResponseWriter, name string, err error) {
 	WinLogErr(fmt.Errorf("template error: %s.html", name))
 	logrus.Error(wrap(err, name))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusInternalServerError)
+	_, werr := w.Write([]byte(errorPageHTML))
+	if werr != nil {
+		logrus.Error(wrap(werr, "renderError: w.write"))
+	}
+}
+
+// renderErrorContext renders an HTTP error page with the path
+func renderErrorContext(_ context.Context, w http.ResponseWriter, r *http.Request, err error) {
+	path := r.URL.RequestURI()
+	GLOBAL_RINGLOG.Enqueue(fmt.Sprintf("ERROR: rendering %s", path)) // -> error rendering /x/b/c
+	// logrus.Error() -> /request/path: error
+	logrus.Errorf("%s: %s", path, err.Error())
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusInternalServerError)
@@ -69,5 +87,13 @@ func wrap(err error, msg string) error {
 	if msg == "" {
 		return err
 	}
+	return fmt.Errorf("%s: %w", msg, err)
+}
+
+func wrapf(err error, format string, args ...any) error {
+	if format == "" {
+		return err
+	}
+	msg := fmt.Sprintf(format, args...)
 	return fmt.Errorf("%s: %w", msg, err)
 }

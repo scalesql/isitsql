@@ -586,6 +586,10 @@ func docsPage(w http.ResponseWriter, req *http.Request) {
 	renderFSDynamic(w, "docs", pageData)
 }
 
+func http500error(w http.ResponseWriter, req *http.Request) {
+	renderErrorContext(context.TODO(), w, req, fmt.Errorf("fake error"))
+}
+
 func aboutPage(w http.ResponseWriter, req *http.Request) {
 	var err error
 	// TODO: make a map where the value has display text and hover text

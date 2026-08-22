@@ -147,6 +147,7 @@ func launchWebServer() {
 
 	//group.HandleFunc("GET /panic", wrapHTTPErrorHandling(panicApp))
 	//group.HandleFunc("GET /race", wrapHTTPErrorHandling(racePage))
+	group.HandleFunc("GET /app/http500", http500error)
 
 	if getGlobalConfig().EnableStatsviz {
 		svmux := http.NewServeMux()
