@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
@@ -257,30 +258,71 @@ func (list *ServerList) SortKeys() {
 	list.Lock()
 	list.SortedKeys = sm.SortedKeys
 	list.Unlock()
+}
 
+func getDNSEntries(fqdn string) ([]string, error) {
+	parts := strings.Split(fqdn, "\\")
+	host := parts[0]
+	ips, err := net.DefaultResolver.LookupHost(context.TODO(), host)
+	if err != nil {
+		return []string{}, err
+	}
+	slices.Sort(ips)
+	return ips, nil
 }
 
 func (s *SqlServerWrapper) resetDB() error {
+	var ips []string
 	var err error
 
 	s.RLock()
 	connType := s.ConnectionType
 	connString := s.ConnectionString
+	transport := s.Connection.NetTransport
+	dnsAddresses := s.DNSAddresses
+	key := s.MapKey
+	fqdn := s.FQDN
+	db := s.DB
 	s.RUnlock()
 
-	db, err := sql.Open(connType, connString)
+	// check if the IP address changed
+	// if not, just exit
+	// if it has changed, we will rebuild the connection pool
+	if transport == "TCP" { // we already polled once and used TCP
+		ips, err = getDNSEntries(fqdn)
+		if err != nil {
+			return err
+		}
+		// if we are using TCP/IP, and we already have a pool, and the IPs didn't change, return
+		if slices.Equal(ips, dnsAddresses) && db != nil {
+			return nil
+		}
+
+		if !slices.Equal(dnsAddresses, []string{}) {
+			msg := fmt.Sprintf("%s: DNS changed: %v -> %v", key, dnsAddresses, ips)
+			WinLogln(msg)
+		}
+	}
+
+	// TODO - for NetBIOS, we don't want to reset this?
+	db, err = sql.Open(connType, connString)
 	if err != nil {
 		WinLogln("Error opening database connection: ", err)
 		return errors.Wrap(err, "Open")
 	}
 
-	// Firewalls are blocking connections older than 60 minutes
-	// This limits us to 3 logins per hour which seems reasonable
-	db.SetConnMaxLifetime(20 * time.Minute)
+	// Firewalls are blocking idle connections older than 60 minutes
+	globalConfig.RLock()
+	db.SetConnMaxLifetime(globalConfig.AppConfig.connectionLifetime)
+	db.SetConnMaxIdleTime(45 * time.Minute) // TODO make this configurable
+	globalConfig.RUnlock()
 
 	s.Lock()
 	oldDB := s.DB
 	s.DB = db
+	if transport == "TCP" {
+		s.DNSAddresses = ips
+	}
 	s.Unlock()
 
 	err = oldDB.Close()
@@ -419,8 +461,11 @@ func (list *ServerList) AddFromSettings(key string, c settings.SQLServer, pollNo
 		WinLogln("Error opening database connection: ", err)
 	}
 	// Firewalls are blocking connections older than 60 minutes
-	// This limits us to 3 logins per hour which seems reasonable
-	db.SetConnMaxLifetime(20 * time.Minute)
+	globalConfig.RLock()
+	db.SetConnMaxLifetime(globalConfig.AppConfig.connectionLifetime)
+	db.SetConnMaxIdleTime(45 * time.Minute) // TODO make this configurable
+	globalConfig.RUnlock()
+
 	s.DB = db
 	s.stop = make(chan struct{}, 1)
 
@@ -443,7 +488,7 @@ func (list *ServerList) AddFromSettings(key string, c settings.SQLServer, pollNo
 	if s.WaitBox == nil {
 		s.WaitBox = &dwaits.Box{}
 	}
-	err = s.WaitBox.Start(context.Background(), DynamicWaitRepository, key, s.ConnectionType, s.ConnectionString)
+	err = s.WaitBox.Start(context.Background(), DynamicWaitRepository, key, s.ConnectionType, s.ConnectionString, s.FQDN)
 	if err != nil {
 		errmsg := fmt.Sprintf("%s: %s", key, errors.Wrap(err, "waitbox.start"))
 		logrus.Error(errmsg)

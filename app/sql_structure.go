@@ -169,8 +169,10 @@ type SqlServer struct {
 	OSName string `json:"os_name"`
 	OSArch string `json:"os_arch"`
 
-	IPAdresses []string    `json:"ip_addresses"`
-	WaitBox    *dwaits.Box // `json:"wait_box"`
+	IPAdresses   []string `json:"ip_addresses"`  // IPs that are listened on
+	DNSAddresses []string `json:"dns_addresses"` // IP that are returned from DNS
+
+	WaitBox *dwaits.Box // `json:"wait_box"`
 
 	// InContainer bool        `json:"in_container"`
 	ContainerType        int32  `json:"container_type"`        // sys.dm_os_sys_info

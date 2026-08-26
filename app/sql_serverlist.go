@@ -112,7 +112,10 @@ func (list *ServerList) NewPool(key string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	pool.SetConnMaxLifetime(20 * time.Minute)
+	globalConfig.RLock()
+	pool.SetConnMaxLifetime(globalConfig.AppConfig.connectionLifetime)
+	pool.SetConnMaxIdleTime(45 * time.Minute)
+	globalConfig.RUnlock()
 	return pool, nil
 }
 

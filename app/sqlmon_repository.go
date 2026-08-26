@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pkg/errors"
@@ -37,6 +38,15 @@ func setupRepository() error {
 	err = toml.Unmarshal(fileBody, &config)
 	if err != nil {
 		return errors.Wrap(err, "toml.unmarshal")
+	}
+
+	// set the connection lifetime
+	if config.Polling.ConnectionLifetimeMinutes != 0 {
+		dur := time.Duration(config.Polling.ConnectionLifetimeMinutes) * time.Minute
+		WinLogf("isitsql.toml: polling.connection_lifetime: %s", dur)
+		globalConfig.Lock()
+		defer globalConfig.Unlock()
+		globalConfig.AppConfig.connectionLifetime = dur
 	}
 
 	// if there are no repository settings, then we are done

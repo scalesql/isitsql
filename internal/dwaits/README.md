@@ -35,6 +35,28 @@ Dynamic Real-Time Waits
 ## Features
 * The Repository can purge any server that is more than one hour old?  Maintenance?  Will need a stopable GO routine
 
+## Longer connections
+* ✅ Capture the host/fqdn in the box struct
+* ✅ demographics needs to set the transport
+* ✅ Add a 10 second ticker for polling DNS
+
+### 10 second ticker
+* poll DNS
+* if it changed,
+    * build a new connection 
+    * if error, log and exit
+    * close the old connection
+    * swap
+    * save the IPs (no error)
+
+### box.polldns() (changed, error)
+* query the DNS
+* if ips != saved, changed = true
+* set box.dnsaddresses
+* return changed, nil 
+
+
+
 
 
 

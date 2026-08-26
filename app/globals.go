@@ -21,11 +21,23 @@ type appConfig struct {
 	AGWarnMB              int64
 	Debug                 bool
 	Trace                 bool
+	connectionLifetime    time.Duration
 }
 
-var globalConfig struct {
+type appConfigWrapper struct {
 	AppConfig appConfig
 	sync.RWMutex
+}
+
+var globalConfig appConfigWrapper
+
+func init() {
+	// previously, we would rebuild the connection pool at every big poll
+	// now we only rebuild on IP changes
+	// so the default is set very low
+	// we expect future releases will gradually increase it
+	// Firewalls often block anything idle that is older than 60 minutes
+	globalConfig.AppConfig.connectionLifetime = 1 * time.Minute
 }
 
 func getGlobalConfig() appConfig {

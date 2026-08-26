@@ -34,6 +34,12 @@ type Box struct {
 	mu         sync.RWMutex
 	first      bool // First time we are polling this server
 	messages   *logring.Logring
+
+	connType     string
+	connString   string
+	dnsAddresses []string
+	transport    string
+	dnsHost      string
 }
 
 type request struct {

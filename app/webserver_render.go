@@ -90,10 +90,10 @@ func wrap(err error, msg string) error {
 	return fmt.Errorf("%s: %w", msg, err)
 }
 
-func wrapf(err error, format string, args ...any) error {
-	if format == "" {
-		return err
-	}
-	msg := fmt.Sprintf(format, args...)
-	return fmt.Errorf("%s: %w", msg, err)
-}
+// func wrapf(err error, format string, args ...any) error {
+// 	if format == "" {
+// 		return err
+// 	}
+// 	msg := fmt.Sprintf(format, args...)
+// 	return fmt.Errorf("%s: %w", msg, err)
+// }

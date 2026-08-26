@@ -6,4 +6,7 @@ type IsItSQLTOML struct {
 		Database   string `toml:"database"`
 		Credential string `toml:"credential"`
 	} `toml:"repository"`
+	Polling struct {
+		ConnectionLifetimeMinutes int `toml:"connection_lifetime"`
+	} `toml:"polling"`
 }

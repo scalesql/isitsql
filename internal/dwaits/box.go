@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"hash/fnv"
+	"net"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -29,21 +32,22 @@ func (b *Box) Error() error {
 	return b.err
 }
 
-// setup gets the basic server information and does a version check
-func (b *Box) setup(ctx context.Context) error {
-	b.messages.Enqueue("setup: entering")
-	defer b.messages.Enqueue("setup: exiting")
+// demographics gets the basic server information and does a version check
+func (b *Box) demographics(ctx context.Context) error {
+	b.messages.Enqueue("demographics: entering")
+	defer b.messages.Enqueue("demographics: exiting")
 	// Get basic server information
-	var domain, server string
+	var domain, server, transport string
 	var started time.Time
 	var major int
 	err := b.db.QueryRowContext(ctx, `
 				SELECT 	COALESCE(DEFAULT_DOMAIN(), '') AS [domain], 
 						@@SERVERNAME AS [server_name], 
 						create_date AS [started_time],
-						CAST(serverproperty('ProductMajorVersion') AS INT) AS major
-				FROM 	sys.databases 
-				WHERE 	name = 'tempdb'`).Scan(&domain, &server, &started, &major)
+						CAST(serverproperty('ProductMajorVersion') AS INT) AS [major],
+						(SELECT TOP 1 COALESCE(net_transport, '') FROM sys.dm_exec_connections WHERE session_id = @@SPID) AS [transport]
+				FROM 	sys.databases
+				WHERE 	name = 'tempdb'`).Scan(&domain, &server, &started, &major, &transport)
 	if err != nil {
 		return err
 	}
@@ -55,11 +59,12 @@ func (b *Box) setup(ctx context.Context) error {
 	b.domain = domain
 	b.server = server
 	b.booted = started
+	b.transport = transport
 	return nil
 }
 
 // Start a Box polling a server every second
-func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType string, connString string) error {
+func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType string, connString string, fqdn string) error {
 	if b.messages == nil {
 		b.messages = logring.New(1000)
 	}
@@ -67,23 +72,35 @@ func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType 
 	b.messages.Enqueue("start:entering")
 	defer b.messages.Enqueue("start:exiting")
 
+	if fqdn == "" {
+		return errors.New("fqdn cannot be empty")
+	}
+
 	// start a GO routine to start this
 	go func(b *Box) {
 		defer failure.HandlePanic()
 		b.key = key
 		b.first = true
 		b.repo = repo
+		b.connType = connType
+		b.connString = connString
 		b.ctx, b.ctxCanel = context.WithCancel(ctx)
+
+		parts := strings.Split(fqdn, "\\")
+		b.dnsHost = parts[0]
 
 		var err error
 		b.db, err = sql.Open(connType, connString)
 		if err != nil {
+			// open just builds the pool -- it doesn't connect
 			logrus.Error(errors.Wrap(err, "box: start: sql.open"))
 			return
 		}
+		b.db.SetConnMaxIdleTime(45 * time.Minute)
+		b.statement = nil
 
 		// try, if ok, goto connected
-		err = b.setup(ctx)
+		err = b.demographics(ctx)
 		if err == ErrLowVersion { // if we are too low a version, log it and don't start polling
 			_ = b.db.Close()
 			logrus.Warnf("box: low version: %s (%s): exiting", key, b.server)
@@ -100,6 +117,7 @@ func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType 
 		// if there was an error, loop to try every 10s
 		connectTicker = time.NewTicker(10 * time.Second)
 		defer connectTicker.Stop()
+		// otherwise, just keep retryingt connect...
 
 	out:
 		for {
@@ -111,7 +129,7 @@ func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType 
 				return
 			case <-connectTicker.C:
 				b.messages.Enqueue("start: <-connectTicker.C")
-				err = b.setup(ctx)
+				err = b.demographics(ctx)
 				if err == ErrLowVersion {
 					_ = b.db.Close()
 					logrus.Warnf("box: low version: %s (%s): exiting", key, b.server)
@@ -155,18 +173,21 @@ func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType 
 					logrus.Tracef("box: %s: polling exiting", b.key)
 					return
 				case <-pollTicker.C:
+					// TODO - every 10 seconds, poll DNS for changes
 					b.messages.Enqueue("box: pollticker: <-pollTicker.C")
 					b.pollWaitsWrapper()
 				}
 			}
 		}(b, int(msdelay))
 
+		time.Sleep(400 * time.Millisecond) // offset the emitted from the polling
 		emitTicker := watch.Ticker(emitFrequency * time.Second)
-		go func(b *Box, delay int) { // this is the emit GO routine
+		time.Sleep(200 * time.Millisecond)
+		pollDNSTicker := watch.Ticker(10 * time.Second) // poll DNS every 10 seconds
+		go func(b *Box, delay int) {                    // this is the emit GO routine
 			b.messages.Enqueue("box: emitticker: entering")
 			defer failure.HandlePanic()
 			time.Sleep(time.Duration(delay) * time.Millisecond)
-			time.Sleep(500 * time.Millisecond) // offset the emitted from the polling
 			for {
 				select {
 				case <-b.ctx.Done():
@@ -174,12 +195,80 @@ func (b *Box) Start(ctx context.Context, repo *Repository, key string, connType 
 					return
 				case <-emitTicker.C:
 					b.messages.Enqueue("box: emitticker: <-emitTicker.C")
-					b.emitWaits()
+					b.oneMinuteProcessor()
+				case <-pollDNSTicker.C:
+					b.messages.Enqueue("box: pollDNSTicker.C")
+					b.PollDNS()
 				}
+
 			}
 		}(b, int(msdelay))
 	}(b)
 	return nil
+}
+
+func (b *Box) PollDNS() {
+	b.mu.RLock()
+	key := b.key
+	fqdn := b.dnsHost
+	saved := b.dnsAddresses
+	transport := b.transport
+	ctx := b.ctx
+	b.mu.RUnlock()
+
+	if transport != "TCP" {
+		return
+	}
+
+	ips, err := net.DefaultResolver.LookupHost(ctx, fqdn)
+	if err != nil {
+		logrus.Errorf("box: %s (%s): polldns: %v", key, fqdn, err)
+		return
+	}
+	slices.Sort(ips)
+	if slices.Equal(saved, ips) {
+		return
+	}
+
+	// slices are not equal 💪
+	if !slices.Equal(saved, []string{}) {
+		logrus.Infof("box.polldns: %s (%s) %v -> %v", key, fqdn, saved, ips)
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.messages.Enqueuef("box: emitting: waits: %d", len(b.Waits))
+	_ = b.repo.Write(b.key, waitring.WaitList{
+		TS:    time.Now(),
+		Waits: b.Waits,
+	})
+	// clear the waits
+	b.Waits = make(map[string]int64)
+
+	err = b.db.Close() // close the old connection
+	if err != nil {
+		logrus.Errorf("box: polldns: b.db.close: %s: %v", key, err)
+	}
+	b.statement = nil
+
+	// build a new connection
+	b.db, err = sql.Open(b.connType, b.connString) // assign the new connection
+	if err != nil {                                // if err, log, and exit
+		logrus.Errorf("box: polldns: sql.open: %s: %v", key, err)
+		return
+	}
+	b.db.SetConnMaxIdleTime(45 * time.Minute)
+	b.first = true
+	b.requests = map[int16]request{}
+
+	// run demographics, log any errors
+	err = b.demographics(b.ctx)
+	if err != nil {
+		logrus.Errorf("box: polldns: b.demographics: %s (%s): %v", key, fqdn, err)
+		return // we aren't saving the IPs so we will try again in 10 seconds
+	}
+	b.dnsAddresses = ips
+
 }
 
 func (b *Box) Stop() {
@@ -187,11 +276,15 @@ func (b *Box) Stop() {
 	b.ctxCanel()
 }
 
+func (b *Box) oneMinuteProcessor() {
+	b.emitWaits()
+}
+
 func (b *Box) emitWaits() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.messages.Enqueuef("box: emitting: waits: %d", len(b.Waits))
-	b.repo.Write(b.key, waitring.WaitList{
+	_ = b.repo.Write(b.key, waitring.WaitList{
 		TS:    time.Now(),
 		Waits: b.Waits,
 	})
@@ -224,6 +317,7 @@ func (b *Box) pollWaitsWrapper() {
 			b.statement = nil
 			b.stateStart = time.Now()
 			logrus.Errorf("pollwaits: err: %s (%s): %s", b.key, b.server, err)
+			//logrus.Errorf("pollwaits: err: b.err='%v' new=%v", b.err, new)
 			b.messages.Enqueuef("box: pollwaitswrapper: e1: %s", err)
 		} else { // we are changing state, maybe to a good one
 			if err == nil { // error is ending
@@ -267,12 +361,12 @@ func (b *Box) pollwaits() error {
 		b.statement, err = b.db.Prepare(requestQuery)
 		if err != nil {
 			//logrus.Errorf("%s: pollwaits: prepare: %s (%s)", b.server, err, b.key)
-			return err
+			return errors.Wrap(err, "b.db.prepare")
 		}
 	}
 	domain, server, booted, requests, err := queryWaits(b.statement)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "querywaits")
 	}
 
 	// if first or different server or restart,
@@ -305,7 +399,7 @@ func (b *Box) pollwaits() error {
 		if !exists {
 			logrus.Tracef("box: %s: new request: %d", b.key, id)
 			b.requests[id] = active
-			b.mapandsavewait(active.wait, active.waitTimeMS)
+			b.mapandsavewait(active.wait, active.waitTimeMS, true)
 			continue
 		}
 		// it exists, start matches, wait matches, AND wait is higher
@@ -314,9 +408,9 @@ func (b *Box) pollwaits() error {
 		if r.started.Equal(active.started) { // this is the same request
 			if r.wait == active.wait { // it is the same wait
 				if active.waitTimeMS > r.waitTimeMS {
-					b.mapandsavewait(active.wait, active.waitTimeMS-r.waitTimeMS)
+					b.mapandsavewait(active.wait, active.waitTimeMS-r.waitTimeMS, false)
 				} else if active.waitTimeMS < r.waitTimeMS {
-					b.mapandsavewait(active.wait, active.waitTimeMS)
+					b.mapandsavewait(active.wait, active.waitTimeMS, false) // maybe this should be true?
 				} // else they are equal, do nothing
 				b.requests[id] = active
 				continue
@@ -324,7 +418,7 @@ func (b *Box) pollwaits() error {
 		}
 		// something has changed, this is a new request or the wait is different
 		b.requests[id] = active
-		b.mapandsavewait(active.wait, active.waitTimeMS)
+		b.mapandsavewait(active.wait, active.waitTimeMS, true)
 	}
 	if requestCount > 0 {
 		b.messages.Enqueuef("box: pollwaits: requests: %d", requestCount)
@@ -348,10 +442,17 @@ func (b *Box) pollwaits() error {
 	return nil
 }
 
-func (b *Box) mapandsavewait(wait string, ms int64) {
+func (b *Box) mapandsavewait(wait string, ms int64, newsession bool) {
 	// don't save empty waits
 	if wait == "" {
 		return
+	}
+
+	// if this is a new session,
+	// and we are polling every second,
+	// we want to cap new waits at 1,000ms
+	if newsession && ms > 1000 {
+		ms = 1000
 	}
 
 	wm := waitmap.Mapping.Lookup(wait)
