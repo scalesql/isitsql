@@ -315,7 +315,8 @@ func (s *SqlServerWrapper) getConnectionInfo(majorVersion int) error {
 				c.net_transport				AS NetTransport, 
 				c.auth_scheme				AS AuthScheme,  
 				s.login_name				AS LoginName, 
-				''							AS SessionContainerName
+				''							AS SessionContainerName,
+				s.login_time				AS LoginTime
 		FROM	sys.dm_exec_connections c
 		JOIN	sys.dm_exec_sessions s ON s.session_id = c.session_id
 		WHERE	c.session_id = @@SPID
@@ -330,17 +331,20 @@ func (s *SqlServerWrapper) getConnectionInfo(majorVersion int) error {
 				c.net_transport				AS NetTransport, 
 				c.auth_scheme				AS AuthScheme,  
 				s.login_name				AS LoginName,
-				COALESCE(ag.[name], '')		AS session_container_name
+				COALESCE(ag.[name], '')		AS SessionContainerName,
+				s.login_time				AS LoginTime
 			FROM	sys.dm_exec_connections c
 			JOIN	sys.dm_exec_sessions s ON s.session_id = c.session_id
-			LEFT JOIN sys.availability_groups ag ON ag.group_id = s.contained_availability_group_id;
+			LEFT JOIN sys.availability_groups ag ON ag.group_id = s.contained_availability_group_id
+			WHERE	c.session_id = @@SPID ; 
 `
 	}
 
 	row := db.QueryRowContext(ctx, query)
 	var id int16
 	var transport, auth, login, container string
-	err := row.Scan(&id, &transport, &auth, &login, &container)
+	var loginTime time.Time
+	err := row.Scan(&id, &transport, &auth, &login, &container, &loginTime)
 	if err != nil {
 		return err
 	}
@@ -348,12 +352,14 @@ func (s *SqlServerWrapper) getConnectionInfo(majorVersion int) error {
 
 	s.Lock()
 	defer s.Unlock()
+
 	s.Connection.Latency = latency
 	s.Connection.SessionID = id
 	s.Connection.NetTransport = transport
 	s.Connection.AuthScheme = auth
 	s.Connection.LoginName = login
-	s.Connection.SessionContinerName = container
+	s.Connection.SessionContainerName = container
+	s.Connection.LoginTime = loginTime
 
 	return nil
 }

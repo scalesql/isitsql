@@ -44,8 +44,9 @@
             <th style="text-align: center;" >Session</th>
             <th>Login</th>
             <th>Transport</th>
-            <th>Auth Scheme</th>
+            <th>Auth</th>
             <th style="text-align: center;" >Latency</th>
+            <th>Login Time</th>
             <th></th>
         </tr>
     </thead>
@@ -64,6 +65,7 @@
             <td>{{ .Connection.NetTransport }}</td>
             <td>{{ .Connection.AuthScheme}}</td>
             <td style="text-align: center;"  data-text="{{ .Connection.Latency.Nanoseconds }}">{{ .Connection.Latency }}</td>
+            <td title="(server time zone)">{{ .Connection.LoginTime.Format "2006-01-02 15:04:05" }}</td>
             
             <td title="{{ .LastPollError }}">{{ .LastPollErrorClean 45 }}</td>
 
