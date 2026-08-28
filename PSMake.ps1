@@ -1,7 +1,18 @@
 Param (
-    [string]$version = "dev"
+    [string]$Version = "dev",
+    [switch]$Sign = $false
 )
 $ErrorActionPreference = "Stop"
+
+function Test-AzureLogin {
+    try {
+        az account show --output none 2>$null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
 
 # Required tools:
 # https://github.com/google/go-licenses - for license reporting
@@ -31,6 +42,21 @@ Write-Host ""
 #     exit
 # }
 
+if ($Sign -and -not (Test-AzureLogin)) {
+    try {
+        az login `
+            --use-device-code `
+            --scope "https://codesigning.azure.net/.default" | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Azure login failed."
+        }
+    }
+    catch {
+        Write-Error $_
+        exit 1
+    }
+    Write-Host "Azure login successful"
+}
 
 $stdZip = ".\deploy\isitsql.$($version).zip"
 If (Test-Path -Path $stdZip) {
@@ -43,12 +69,6 @@ hottest test ./...
 if ($LastExitCode -ne 0) {
     exit
 }
-
-# Write-Output "Running go generate..."
-# go generate
-# if ($LastExitCode -ne 0) {
-#     exit
-# }
 
 Write-Output "Building isitsql.exe..."
 # go build -o "$($target)\xelogstash.exe" -a -ldflags "-X main.sha1ver=$sha1 -X main.buildTime=$now" ".\cmd\xelogstash"
@@ -82,18 +102,54 @@ go build -a -o "$($target)\optional\pooltest.exe" ./cmd/pooltest
 if ($LastExitCode -ne 0) {
     exit
 }
-blackfriday-tool -css .\static\docs\style.css -embed .\cmd\pooltest\README.md    ".\deploy\isitsql\optional\pooltest.html"
 
+if ($Sign) {
+    # Signing code
+    Write-Host "Signing IsItSQL..."
+    sign.exe code artifact-signing `
+        -b "C:\dev\github.com\scalesql\isitsql\deploy\isitsql" `
+        --artifact-signing-endpoint "https://cus.codesigning.azure.net/" `
+        --artifact-signing-certificate-profile "sign-cert" `
+        --artifact-signing-account "acct-codesign" `
+        isitsql.exe `
+        -v Warning `
+        --azure-credential-type azure-cli
+
+    $signature = Get-AuthenticodeSignature "$($target)\isitsql.exe"
+
+    if ($signature.Status -ne 'Valid') {
+        Write-Error "Signature validation failed: $($signature.Status)"
+        exit 1
+    }
+
+    Write-Host "Signed by: $($signature.SignerCertificate.Subject)"
+    Write-Host "Issuer:    $($signature.SignerCertificate.Issuer)"
+    Write-Host "Expires :  $($signature.SignerCertificate.NotAfter)"
+
+    Write-Host "Signing other executables..."
+    sign.exe code artifact-signing `
+        -b "C:\dev\github.com\scalesql\isitsql\deploy\isitsql\optional" `
+        --artifact-signing-endpoint "https://cus.codesigning.azure.net/" `
+        --artifact-signing-certificate-profile "sign-cert" `
+        --artifact-signing-account "acct-codesign" `
+        *.exe `
+        -v Warning `
+        --azure-credential-type azure-cli
+}
+
+blackfriday-tool -css .\static\docs\style.css -embed .\cmd\pooltest\README.md    ".\deploy\isitsql\optional\pooltest.html"
 
 Write-Output "" 
 Write-Output "isitsql.exe -version..."
 & "$($target)\isitsql.exe" -version
 Write-Output "" 
 
-Write-Output "Copying Files..."
+Write-Host "go-license report..."
 go-licenses report  ./... --ignore github.com/scalesql --template static/other/notice.tmpl > deploy/isitsql/NOTICE.md
 go-licenses report  ./... --ignore github.com/scalesql --template static/other/notice.tmpl > ./NOTICE.md
 # Copy-Item -Path ".\README.html"    -Destination $target
+
+Write-Output "Copying Files..."
 Copy-Item -Path ".\LICENSE.md"   -Destination "$target\LICENSE.md"
 # This is my blackfriday at https://github.com/billgraziano/blackfriday
 # My blackfriday embeds the CSS in the HTML
@@ -113,16 +169,5 @@ $stdCompress = @{
     Update = $true
 }
 Compress-Archive @stdCompress
-
-# Write-Host "Writing Dependency Zip Files..."
-# # Standard Zip file
-# $stdZip = ".\deploy\isitsql\dependency-licenses.zip"
-# $stdCompress = @{
-#     Path = ".\dependency-licenses"
-#     CompressionLevel = "Fastest"
-#     DestinationPath = $stdZip
-#     Update = $true
-# }
-# Compress-Archive @stdCompress
 
 Write-Output "Done."

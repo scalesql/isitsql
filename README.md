@@ -25,6 +25,15 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
 
 ## What's New
 
+### Version 2.8 (August 2026)
+* The executables in the ZIP file are signed
+* Previously, IsItSQL logged in to each server every minute.  This was the easiest way to catch failovers and other server changes.  The default life of a connection is still one minute but can be overridden in `isitsql.toml`.    
+    ```toml
+    [polling]
+    connection_lifetime = 30 # in minutes
+    ```
+    IsItSQL will also do a DNS check of any TCP connection every 10 seconds.  If the IP address changes, it will complete a new login.
+
 ### Version 2.7 (August 2026)
 * **Removed support for SQL Server 2014 Availability Groups**
 * Improved support for SQL Server running in Docker
