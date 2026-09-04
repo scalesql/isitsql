@@ -63,3 +63,4 @@ servers.txt
 /notes
 isitsql_panic_*.txt
 isitsql_heap_*.pb.gz
+*.pprof
