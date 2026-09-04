@@ -95,7 +95,7 @@ func (s *SqlServerWrapper) setBackups() error {
 			SELECT
 				db.database_id, 
 				db.[name],
-				db.[physical_database_name]
+				[physical_database_name] = COALESCE(db.[physical_database_name], db.[name])
 				,ag.[name] AS ag_name
 			FROM sys.databases db  
 			LEFT JOIN sys.availability_databases_cluster adc ON adc.database_name = COALESCE(db.[physical_database_name], db.[name])
