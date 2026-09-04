@@ -35,6 +35,7 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
     IsItSQL will also do a DNS check of any TCP connection every 10 seconds.  If the IP address changes, it will complete a new login.
 * All connections set Multi Subnet Failover to true.  This has always been true, but never explicitly documented.
 * The display of running SQL statement should trim better.  Sometimes we would get an invalid UTF charater which is a diamond in star.
+* Improve backup polling.  Especially inside Contained Availability Groups.
 
 ### Version 2.7 (August 2026)
 * **Removed support for SQL Server 2014 Availability Groups**
