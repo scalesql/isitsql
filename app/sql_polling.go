@@ -433,6 +433,7 @@ func (sw *SqlServerWrapper) getIP() error {
 	if err != nil {
 		sw.RLock()
 		fqdn, key := sw.FQDN, sw.MapKey
+		sw.RUnlock()
 		logrus.Error(errors.Wrapf(err, "lookupip: %s: %s", key, fqdn))
 	}
 	allips = append(allips, fqdnIPs...)

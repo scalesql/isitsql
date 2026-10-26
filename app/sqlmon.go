@@ -292,13 +292,12 @@ func setupAsync() error {
 	globalConfig.AppConfig.AGWarnMB = s.AGWarnMB
 	globalConfig.AppConfig.Debug = s.Debug
 	globalConfig.AppConfig.Trace = s.Trace
+	globalConfig.Unlock()
 
 	err = settings.MakeDir("cache")
 	if err != nil {
 		return errors.Wrap(err, "settings.makedir")
 	}
-
-	globalConfig.Unlock()
 
 	globalStats.Lock()
 	globalStats.ClientGUID = s.ClientGUID

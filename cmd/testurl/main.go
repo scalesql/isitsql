@@ -63,16 +63,16 @@ func main() {
 }
 
 func getPage(link string) (int, string, error) {
-	// println(link)
 	resp, err := http.Get(link)
-	// println(resp.StatusCode)
 	if err != nil {
 		return 0, "error", err
 	}
+	defer resp.Body.Close()
+
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return resp.StatusCode, resp.Status, err
 	}
-	defer resp.Body.Close()
+
 	return resp.StatusCode, resp.Status, nil
 }
