@@ -1035,7 +1035,9 @@ func serverPage(w http.ResponseWriter, req *http.Request) {
 	s := wr.CloneSqlServer()
 	pageData.OneServer = &s
 
-	sessions, err := session.Get(context.Background(), wr.DB, wr.MajorVersion)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10*time.Second))
+	defer cancel()
+	sessions, err := session.Get(ctx, wr.DB, wr.MajorVersion)
 	if err != nil {
 		WinLogln(fmt.Sprintf("Get Active Sessions: %v", err))
 		pageData.Context.Message = fmt.Sprintf("Get Active Sessions: %v", err)
