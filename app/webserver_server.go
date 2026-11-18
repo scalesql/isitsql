@@ -54,6 +54,7 @@ func ServerAboutPage(w http.ResponseWriter, req *http.Request) {
 		m["Memory: Max"] = KBToString(s.MaxMemoryKB)
 	}
 	m["Memory: Physical"] = KBToString(s.PhysicalMemoryKB)
+	m["Started"] = fmt.Sprintf("%s (%s)", s.StartTime.Format("2006-01-02 15:04:05"), s.UpTimeString())
 	// if s.CredentialKey != "" {
 	// 	m["IsItSQL: Credential"] = s.CredentialKey
 	// }
