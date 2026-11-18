@@ -89,6 +89,6 @@ func setupRepository() error {
 	if user != "" {
 		msg += fmt.Sprintf(" user=%s", user)
 	}
-	WinLogf(msg)
+	WinLogf("%s", msg)
 	return nil
 }
