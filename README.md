@@ -25,7 +25,7 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
 
 ## What's New
 
-### Version 2.8 (August 2026)
+### Version 2.8 (November 2026)
 * The executables in the ZIP file are signed
 * Previously, IsItSQL logged in to each server every minute.  This was the easiest way to catch failovers and other server changes.  The default life of a connection is still one minute but can be overridden in `isitsql.toml`.    
     ```toml
@@ -34,8 +34,10 @@ Please see the [Documentation](static/docs/Docs.md) for more details.
     ```
     IsItSQL will also do a DNS check of any TCP connection every 10 seconds.  If the IP address changes, it will complete a new login.
 * All connections set Multi Subnet Failover to true.  This has always been true, but never explicitly documented.
-* The display of running SQL statement should trim better.  Sometimes we would get an invalid UTF charater which is a diamond in star.
 * Improve backup polling.  Especially inside Contained Availability Groups.
+* Internal locking improvements
+* Update GO and dependenceis for various security fixes
+* The Server Activity page times out after 10 seconds trying to get a list of active requests.  This should help anything displaying through a proxy that has a timeout.
 
 ### Version 2.7 (August 2026)
 * **Removed support for SQL Server 2014 Availability Groups**
