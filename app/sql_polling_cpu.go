@@ -92,6 +92,10 @@ order by [timestamp] asc
 		lastSQLCPU = result.sql
 	}
 
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "rows.err")
+	}
+
 	s.Lock()
 	defer s.Unlock()
 

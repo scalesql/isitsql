@@ -243,15 +243,18 @@ func (s *SqlServerWrapper) setBackups() error {
 			backup.SetFull(keyDomain, keyContainer, keyDatabase, start, instance, device)
 		}
 	}
+
 	if time.Since(start) > time.Duration(5*time.Second) {
 		logrus.Debugf("long backup poll: %s (%s) duration=%s", serverName, fqdn, time.Since(start))
+	}
+
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "rows.err")
 	}
 
 	s.Lock()
 	s.BackupMessage = ""
 	s.Unlock()
-
-	//	_ = s.setBackupAlert()
 
 	return nil
 }

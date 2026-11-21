@@ -2,6 +2,8 @@ package app
 
 import (
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type queryStats struct {
@@ -312,6 +314,10 @@ func (s *SqlServerWrapper) getQueryStats() ([]queryStats, error) {
 
 		qs = append(qs, p)
 
+	}
+
+	if err := rows.Err(); err != nil {
+		return qs, errors.Wrap(err, "rows.err")
 	}
 
 	return qs, nil

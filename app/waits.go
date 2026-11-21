@@ -195,6 +195,10 @@ func (s *SqlServerWrapper) PollWaits() error {
 		waits.Waits[w.Wait] = w
 	}
 
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "rows.err")
+	}
+
 	// logrus.Debugf("[%s] pollwaits: waits: %d", key, len(waits.Waits))
 
 	// Figure out the wait Summary

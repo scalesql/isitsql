@@ -179,6 +179,10 @@ func (s *SqlServerWrapper) getDatabases() error {
 		dbs[db.DatabaseID] = &db
 	}
 
+	if err := rows.Err(); err != nil {
+		return errors.Wrap(err, "rows.err")
+	}
+
 	if ServerVersion >= 12 {
 		// Get the AG stuff
 		agdatabases, err := hadr.GetReplicaDatabases(s.DB)
