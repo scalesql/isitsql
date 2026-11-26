@@ -44,7 +44,7 @@ func ServerAboutPage(w http.ResponseWriter, req *http.Request) {
 	m["Version: Edition"] = s.ProductEdition
 	m["Installed"] = s.Installed.Format("2006-01-02")
 	m["OS: Name"] = fmt.Sprintf("%s (%s)", s.OSName, s.OSArch)
-	m["OS: IPs"] = s.IP2HTMLList()
+	m["IP Addresses"] = s.IP2HTMLList()
 	m["Version"] = fmt.Sprintf("%s %s %s", s.VersionString, s.ProductLevel, s.ProductUpdateLevel)
 	m["IsItSQL: FQDN"] = s.FQDN
 	m["IsItSQL: Tags"] = s.TagString()
